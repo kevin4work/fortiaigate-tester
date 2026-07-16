@@ -28,7 +28,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
-pip install streamlit pandas requests
+python -m pip install streamlit pandas requests
 ```
 
 ## Running
