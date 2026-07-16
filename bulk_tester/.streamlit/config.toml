@@ -1,0 +1,16 @@
+[theme]
+base = "light"
+primaryColor = "#EE3124"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f8fa"
+textColor = "#1F2328"
+borderColor = "#d0d7de"
+
+baseRadius = "8px"
+buttonRadius = "8px"
+showWidgetBorder = true
+showSidebarBorder = true
+
+redColor = "#EE3124"
+greenColor = "#1a7f37"
+orangeColor = "#bf8700"
