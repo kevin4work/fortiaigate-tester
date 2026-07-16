@@ -23,12 +23,11 @@ Both apps share the same core logic in `common/fortiaigate_test.py`.
 ## Setup
 
 ```bash
-# Create and activate a virtualenv
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
-python -m pip install streamlit pandas requests
+python3 -m pip install streamlit pandas requests
 ```
 
 ## Running
