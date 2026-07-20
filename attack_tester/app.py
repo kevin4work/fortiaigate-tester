@@ -255,52 +255,51 @@ if st.session_state.results:
     valid = total_tests - errors
     block_rate = blocked / valid * 100 if valid > 0 else 0
 
-    st.subheader(":material/query_stats: Summary dashboard")
+    with st.expander(":material/query_stats: Summary dashboard", expanded=False):
+        # KPI row
+        with st.container(horizontal=True):
+            st.metric("Total tested", str(total_tests), border=True)
+            st.metric("Blocked", str(blocked), f"{block_rate:.1f}%", border=True,
+                      chart_data=[blocked], chart_type="bar")
+            st.metric("Through", str(through), border=True)
+            st.metric("Errors", str(errors), border=True)
 
-    # KPI row
-    with st.container(horizontal=True):
-        st.metric("Total tested", str(total_tests), border=True)
-        st.metric("Blocked", str(blocked), f"{block_rate:.1f}%", border=True,
-                  chart_data=[blocked], chart_type="bar")
-        st.metric("Through", str(through), border=True)
-        st.metric("Errors", str(errors), border=True)
+        st.space("small")
 
-    st.space("small")
+        # Block rate per attack type
+        valid_df = df[df["outcome"] != "Error"]
+        if len(valid_df) > 0:
+            attack_summary = (
+                valid_df.groupby("attack_type")
+                .apply(lambda g: pd.Series({
+                    "Blocked": len(g[g["outcome"] == "Blocked"]),
+                    "Through": len(g[g["outcome"] == "Through"]),
+                    "Total": len(g),
+                    "Block rate": len(g[g["outcome"] == "Blocked"]) / len(g) * 100,
+                }))
+                .reset_index()
+            )
 
-    # Block rate per attack type
-    valid_df = df[df["outcome"] != "Error"]
-    if len(valid_df) > 0:
-        attack_summary = (
-            valid_df.groupby("attack_type")
-            .apply(lambda g: pd.Series({
-                "Blocked": len(g[g["outcome"] == "Blocked"]),
-                "Through": len(g[g["outcome"] == "Through"]),
-                "Total": len(g),
-                "Block rate": len(g[g["outcome"] == "Blocked"]) / len(g) * 100,
-            }))
-            .reset_index()
-        )
+            with st.container(border=True):
+                st.subheader("Block rate per attack type")
+                st.bar_chart(attack_summary, x="attack_type", y="Block rate")
+                st.dataframe(attack_summary, hide_index=True)
 
-        with st.container(border=True):
-            st.subheader("Block rate per attack type")
-            st.bar_chart(attack_summary, x="attack_type", y="Block rate")
-            st.dataframe(attack_summary, hide_index=True)
+        # Outcome distribution
+        if len(valid_df) > 0:
+            with st.container(border=True):
+                st.subheader("Outcome distribution")
+                outcome_counts = valid_df["outcome"].value_counts().reset_index()
+                outcome_counts.columns = ["Outcome", "Count"]
+                st.bar_chart(outcome_counts, x="Outcome", y="Count")
 
-    # Outcome distribution
-    if len(valid_df) > 0:
-        with st.container(border=True):
-            st.subheader("Outcome distribution")
-            outcome_counts = valid_df["outcome"].value_counts().reset_index()
-            outcome_counts.columns = ["Outcome", "Count"]
-            st.bar_chart(outcome_counts, x="Outcome", y="Count")
-
-    # Export
-    st.space("small")
-    with st.container(horizontal_alignment="center"):
-        csv_export = df.to_csv(index=False)
-        st.download_button(
-            ":material/download: Download results as CSV",
-            csv_export,
-            "fortiaigate_attack_results.csv",
-            "text/csv",
-        )
+        # Export
+        st.space("small")
+        with st.container(horizontal_alignment="center"):
+            csv_export = df.to_csv(index=False)
+            st.download_button(
+                ":material/download: Download results as CSV",
+                csv_export,
+                "fortiaigate_attack_results.csv",
+                "text/csv",
+            )
