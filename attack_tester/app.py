@@ -176,6 +176,33 @@ with st.sidebar:
     ):
         st.session_state.page = "Prompt Injection"
 
+    # Shadow AI button
+    sai_active = st.session_state.page == "Shadow AI"
+    if st.button(
+        ":material/person_search: Shadow AI",
+        type="primary" if sai_active else "secondary",
+        use_container_width=True,
+    ):
+        st.session_state.page = "Shadow AI"
+
+    # Sensitive Data Leakage button
+    sdl_active = st.session_state.page == "Sensitive Data Leakage"
+    if st.button(
+        ":material/leak_remove: Sensitive Data Leakage",
+        type="primary" if sdl_active else "secondary",
+        use_container_width=True,
+    ):
+        st.session_state.page = "Sensitive Data Leakage"
+
+    # Intelligent Routing button
+    ir_active = st.session_state.page == "Intelligent Routing"
+    if st.button(
+        ":material/alt_route: Intelligent Routing",
+        type="primary" if ir_active else "secondary",
+        use_container_width=True,
+    ):
+        st.session_state.page = "Intelligent Routing"
+
     # Footer at bottom of sidebar
     st.markdown('<div class="sidebar-footer">FortiAIGate attack tester v1.0</div>', unsafe_allow_html=True)
 
@@ -527,3 +554,21 @@ if page == "Prompt Injection":
                     "fortiaigate_attack_results.csv",
                     "text/csv",
                 )
+
+# ── Page: Shadow AI ──
+
+if page == "Shadow AI":
+    st.header(":material/person_search: Shadow AI")
+    st.info("Content to be added.", icon=":material/construction:")
+
+# ── Page: Sensitive Data Leakage ──
+
+if page == "Sensitive Data Leakage":
+    st.header(":material/leak_remove: Sensitive Data Leakage")
+    st.info("Content to be added.", icon=":material/construction:")
+
+# ── Page: Intelligent Routing ──
+
+if page == "Intelligent Routing":
+    st.header(":material/alt_route: Intelligent Routing")
+    st.info("Content to be added.", icon=":material/construction:")
