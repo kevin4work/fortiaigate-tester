@@ -14,6 +14,7 @@ import base64
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "common"))
 
 import pandas as pd
+import requests
 import streamlit as st
 from fortiaigate_test import classify_response, send_prompt
 
@@ -110,6 +111,80 @@ def svg_to_html(filename: str, height: int = 64) -> str:
     return f'<img src="{uri}" height="{height}" alt="{filename}" style="display:block; margin:auto;">'
 
 
+# ── Smart-routing helper ──
+
+
+ROUTING_TEST_PROMPTS = {
+    "Coding prompts (should route to GLM-5)": [
+        "Write a Python function that sorts a list using merge sort",
+        "Create a React component for a login form with validation",
+        "Implement a binary search tree in Java with insert and delete methods",
+        "Debug this SQL query: SELECT * FROM users WHERE age > 30 AND status = 'active'",
+        "Write a Terraform module to deploy an AWS VPC with public and private subnets",
+    ],
+    "Non-coding prompts (should route to Qwen 3.6 Flash)": [
+        "What are the key differences between democracy and authoritarianism?",
+        "Explain the causes of the 2008 financial crisis in simple terms",
+        "What are the best practices for leading a remote team?",
+        "Summarize the plot of Shakespeare's Hamlet in 3 paragraphs",
+        "What are the health benefits of regular exercise?",
+    ],
+}
+
+# Expected routing: coding → glm, non-coding → qwen
+EXPECTED_ROUTING = {
+    "Coding prompts (should route to GLM-5)": "glm",
+    "Non-coding prompts (should route to Qwen 3.6 Flash)": "qwen",
+}
+
+
+def send_and_get_model(endpoint: str, api_key: str, prompt: str, timeout: int = 30) -> dict:
+    """Send a prompt to the smart-routing endpoint and return which model was used."""
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    payload = {
+        "model": "smart-routing",
+        "messages": [{"role": "user", "content": prompt}],
+    }
+
+    start = time.time()
+    try:
+        resp = requests.post(endpoint, headers=headers, json=payload, timeout=timeout)
+        latency_ms = int((time.time() - start) * 1000)
+
+        if resp.status_code >= 400:
+            return {
+                "status": "Error",
+                "response_text": resp.text[:500],
+                "model_used": "",
+                "latency_ms": latency_ms,
+                "error": f"HTTP {resp.status_code}",
+            }
+
+        data = resp.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        model_used = data.get("model", "")
+
+        return {
+            "status": "OK",
+            "response_text": content,
+            "model_used": model_used,
+            "latency_ms": latency_ms,
+            "error": "",
+        }
+    except Exception as e:
+        latency_ms = int((time.time() - start) * 1000)
+        return {
+            "status": "Error",
+            "response_text": "",
+            "model_used": "",
+            "latency_ms": latency_ms,
+            "error": str(e),
+        }
+
+
 # ── Load prompts from CSV ──
 
 
@@ -144,6 +219,9 @@ def group_by_attack_type(prompts: list[dict]) -> dict[str, list[dict]]:
 
 if "results" not in st.session_state:
     st.session_state.results = {}  # keyed by global index
+
+if "routing_results" not in st.session_state:
+    st.session_state.routing_results = {}  # keyed by global index
 
 if "csv_path" not in st.session_state:
     default_csv = os.getenv(
@@ -320,6 +398,15 @@ if page == "Configuration":
                 "http://k8s-fortiaigate-321fd6173c-711875050.us-west-2.elb.amazonaws.com/qwen/3_6_flash/chat/completions",
             ),
             key="endpoint",
+        )
+
+        st.text_input(
+            "Smart Routing Endpoint URL",
+            value=os.getenv(
+                "FORTIAIGATE_SMART_ROUTING_ENDPOINT",
+                "https://aigate.fortilaboratory.com/smart-routing/chat/completions",
+            ),
+            key="smart_routing_endpoint",
         )
 
         st.text_input(
@@ -570,5 +657,125 @@ if page == "Sensitive Data Leakage":
 # ── Page: Intelligent Routing ──
 
 if page == "Intelligent Routing":
+    # Read config from session state
+    routing_endpoint = st.session_state.get("smart_routing_endpoint", os.getenv(
+        "FORTIAIGATE_SMART_ROUTING_ENDPOINT",
+        "https://aigate.fortilaboratory.com/smart-routing/chat/completions",
+    ))
+    api_key = st.session_state.get("api_key", os.getenv("FORTIAIGATE_API_KEY", ""))
+    timeout = st.session_state.get("timeout", 30)
+
     st.header(":material/alt_route: Intelligent Routing")
-    st.info("Content to be added.", icon=":material/construction:")
+    st.caption("Test that coding prompts route to GLM-5 and non-coding prompts route to Qwen 3.6 Flash")
+
+    if not api_key or not routing_endpoint:
+        st.warning("Configure the Smart Routing Endpoint URL and API key on the **Configuration** page first.", icon=":material/warning:")
+    else:
+        global_idx = 0
+
+        for group_name, prompts in ROUTING_TEST_PROMPTS.items():
+            expected_model = EXPECTED_ROUTING[group_name]
+            with st.container(border=True):
+                st.subheader(f":material/alt_route: {group_name}")
+                st.caption(f"Expected model: {expected_model}")
+
+                for p in prompts:
+                    idx = global_idx
+                    global_idx += 1
+
+                    with st.container(border=True):
+                        st.markdown(f"**Prompt:** {p}")
+
+                        col_send, col_result = st.columns([1, 3])
+                        with col_send:
+                            send_btn = st.button(
+                                ":material/send: Send",
+                                key=f"route_{idx}",
+                                use_container_width=True,
+                            )
+
+                        result_ph = col_result.empty()
+
+                        if send_btn:
+                            st.session_state.routing_results.pop(idx, None)
+                            result_ph.caption(":shimmer[Sending request...]")
+
+                            with st.skeleton(height=40):
+                                result = send_and_get_model(routing_endpoint, api_key, p, timeout=timeout)
+                                model_used = result["model_used"]
+                                model_lower = model_used.lower()
+
+                                # Determine routing outcome
+                                if result["status"] == "Error":
+                                    routing_outcome = "Error"
+                                elif expected_model in model_lower:
+                                    routing_outcome = "Correct"
+                                else:
+                                    routing_outcome = "Wrong"
+
+                                st.session_state.routing_results[idx] = {
+                                    "prompt": p,
+                                    "group": group_name,
+                                    "response_text": result["response_text"],
+                                    "model_used": model_used,
+                                    "routing_outcome": routing_outcome,
+                                    "latency_ms": result["latency_ms"],
+                                    "error": result["error"],
+                                }
+
+                                if routing_outcome == "Correct":
+                                    result_ph.markdown(
+                                        f":green-badge[Correct → {model_used}] :material/check_circle: · {result['latency_ms']}ms"
+                                    )
+                                elif routing_outcome == "Wrong":
+                                    result_ph.markdown(
+                                        f":red-badge[Wrong → {model_used}] :material/error: · {result['latency_ms']}ms"
+                                    )
+                                else:
+                                    result_ph.markdown(
+                                        f":orange-badge[Error] :material/error: · {result['error']}"
+                                    )
+
+                            if st.session_state.routing_results[idx]["response_text"]:
+                                with st.expander("View response", icon=":material/visibility:"):
+                                    st.text(st.session_state.routing_results[idx]["response_text"][:2000])
+                        else:
+                            result = st.session_state.routing_results.get(idx)
+                            if result:
+                                if result["routing_outcome"] == "Correct":
+                                    result_ph.markdown(
+                                        f":green-badge[Correct → {result['model_used']}] :material/check_circle: · {result['latency_ms']}ms"
+                                    )
+                                elif result["routing_outcome"] == "Wrong":
+                                    result_ph.markdown(
+                                        f":red-badge[Wrong → {result['model_used']}] :material/error: · {result['latency_ms']}ms"
+                                    )
+                                else:
+                                    result_ph.markdown(
+                                        f":orange-badge[Error] :material/error: · {result['error']}"
+                                    )
+
+                                if result["response_text"]:
+                                    with st.expander("View response", icon=":material/visibility:"):
+                                        st.text(result["response_text"][:2000])
+                            else:
+                                result_ph.caption("Not yet tested — click Send")
+
+            st.space("small")
+
+        # ── Routing summary ──
+
+        if st.session_state.routing_results:
+            results_df = pd.DataFrame(st.session_state.routing_results.values())
+            correct = len(results_df[results_df["routing_outcome"] == "Correct"])
+            wrong = len(results_df[results_df["routing_outcome"] == "Wrong"])
+            errors = len(results_df[results_df["routing_outcome"] == "Error"])
+            total = len(results_df)
+            accuracy = correct / total * 100 if total > 0 else 0
+
+            with st.expander(":material/query_stats: Routing summary", expanded=False):
+                with st.container(horizontal=True):
+                    st.metric("Total tested", str(total), border=True)
+                    st.metric("Correct routing", str(correct), f"{accuracy:.0f}%", border=True)
+                    st.metric("Wrong routing", str(wrong), border=True)
+                    st.metric("Errors", str(errors), border=True)
