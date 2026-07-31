@@ -1,0 +1,8 @@
+# Example terraform.tfvars — copy to terraform.tfvars and edit as needed
+
+aws_region   = "us-west-2"
+project_name = "fortiaigate-tester"
+instance_type = "t3.small"
+key_name     = "aws-demo-us-west-2"
+vpc_cidr     = "10.0.0.0/16"
+public_subnet_cidr = "10.0.1.0/24"

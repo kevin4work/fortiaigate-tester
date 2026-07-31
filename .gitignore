@@ -58,3 +58,11 @@ Thumbs.db
 # mypy / ruff
 .mypy_cache/
 .ruff_cache/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+
