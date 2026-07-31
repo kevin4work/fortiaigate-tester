@@ -26,10 +26,36 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# EC2 security group — allow 8501 from ALB, 22 from VPC for SSH
+# NLB security group — allow SSH (2222) from anywhere
+resource "aws_security_group" "nlb" {
+  name        = "${var.project_name}-nlb-sg"
+  description = "Allow SSH (2222) inbound to NLB"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 2222
+    to_port     = 2222
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name    = "${var.project_name}-nlb-sg"
+    Project = var.project_name
+  }
+}
+
+# EC2 security group — allow 8501 from ALB, 22 only from NLB
 resource "aws_security_group" "ec2" {
   name        = "${var.project_name}-ec2-sg"
-  description = "Allow Streamlit (8501) from ALB and SSH from VPC"
+  description = "Allow Streamlit (8501) from ALB and SSH (22) only from NLB"
   vpc_id      = aws_vpc.main.id
 
   # Streamlit port from ALB security group
@@ -40,12 +66,12 @@ resource "aws_security_group" "ec2" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  # SSH from within the VPC
+  # SSH only from the NLB security group (no direct public access)
   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.nlb.id]
   }
 
   egress {

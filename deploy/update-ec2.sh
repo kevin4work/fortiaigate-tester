@@ -1,34 +1,37 @@
 #!/bin/bash
-# ── Deploy code updates to the running EC2 instance ──
+# ── Deploy code updates to the running EC2 instance via NLB ──
 # Usage: AWS_PROFILE=fortinet-admin ./deploy/update-ec2.sh
 #
-# This script SSHs into the EC2 instance, pulls the latest code from GitHub,
-# reinstalls dependencies, and restarts the Streamlit service.
+# This script SSHs into the EC2 instance through the NLB on port 2222,
+# pulls the latest code from GitHub, reinstalls dependencies, and
+# restarts the Streamlit service.
 # Run this after pushing new code to the remote repo.
 
 set -euo pipefail
 
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Get the EC2 public IP from Terraform output
-echo "Getting EC2 instance details from Terraform..."
-EC2_IP=$(terraform -chdir="$DEPLOY_DIR" output -raw ec2_public_ip 2>/dev/null || echo "")
+# Get the NLB DNS name from Terraform output
+echo "Getting NLB DNS from Terraform..."
+NLB_DNS=$(terraform -chdir="$DEPLOY_DIR" output -raw ssh_nlb_dns 2>/dev/null || echo "")
 
-if [ -z "$EC2_IP" ]; then
-  echo "Error: Could not get EC2 public IP. Is the infrastructure deployed?"
+if [ -z "$NLB_DNS" ]; then
+  echo "Error: Could not get NLB DNS. Is the infrastructure deployed?"
   echo "Run: cd $DEPLOY_DIR && terraform apply"
   exit 1
 fi
 
 KEY_FILE="${AWS_SSH_KEY:-$HOME/.ssh/aws-demo-us-west-2.pem}"
+SSH_PORT=2222
 
-echo "EC2 public IP: $EC2_IP"
+echo "NLB DNS: $NLB_DNS"
+echo "SSH port: $SSH_PORT"
 echo "SSH key: $KEY_FILE"
 echo ""
 
-# SSH into EC2, pull latest code, reinstall deps, restart service
-echo "Deploying update to EC2..."
-ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" "ec2-user@$EC2_IP" bash << 'REMOTE_SCRIPT'
+# SSH into EC2 via NLB on port 2222, pull latest code, reinstall deps, restart service
+echo "Deploying update to EC2 (via NLB port $SSH_PORT)..."
+ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" -p "$SSH_PORT" "ec2-user@$NLB_DNS" bash << 'REMOTE_SCRIPT'
 set -euo pipefail
 APP_DIR="/opt/fortiaigate-tester"
 
