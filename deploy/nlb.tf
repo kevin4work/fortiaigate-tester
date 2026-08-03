@@ -16,11 +16,12 @@ resource "aws_lb" "ssh" {
 
 # NLB target group — targets EC2 on port 22
 resource "aws_lb_target_group" "ssh" {
-  name        = "${var.project_name}-ssh-tg"
-  port        = 22
-  protocol    = "TCP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "instance"
+  name               = "${var.project_name}-ssh-tg"
+  port               = 22
+  protocol           = "TCP"
+  vpc_id             = aws_vpc.main.id
+  target_type        = "instance"
+  preserve_client_ip = false
 
   health_check {
     enabled             = true

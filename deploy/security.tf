@@ -66,12 +66,13 @@ resource "aws_security_group" "ec2" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  # SSH only from the NLB security group (no direct public access)
+  # SSH from VPC CIDR — NLB forwards traffic from its node IPs within the VPC
+  # (NLBs don't attach security groups, so we can't reference an NLB SG here)
   ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.nlb.id]
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
   }
 
   egress {
