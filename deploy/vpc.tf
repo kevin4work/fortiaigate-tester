@@ -11,7 +11,7 @@ resource "aws_vpc" "main" {
   }
 }
 
-# ── Public subnet ──
+# ── Public subnet A ──
 
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
@@ -20,7 +20,21 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name    = "${var.project_name}-public-subnet"
+    Name    = "${var.project_name}-public-subnet-a"
+    Project = var.project_name
+  }
+}
+
+# ── Public subnet B (required for ALB — needs 2 AZs) ──
+
+resource "aws_subnet" "public_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_b_cidr
+  availability_zone       = "${var.aws_region}b"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name    = "${var.project_name}-public-subnet-b"
     Project = var.project_name
   }
 }
@@ -54,5 +68,10 @@ resource "aws_route_table" "public" {
 
 resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_b" {
+  subnet_id      = aws_subnet.public_b.id
   route_table_id = aws_route_table.public.id
 }

@@ -478,6 +478,15 @@ with st.sidebar:
     ):
         st.session_state.page = "Intelligent Routing"
 
+    # Rate Limit button
+    rl_active = st.session_state.page == "Rate Limit"
+    if st.button(
+        ":material/speed: Rate Limit",
+        type="primary" if rl_active else "secondary",
+        width="stretch",
+    ):
+        st.session_state.page = "Rate Limit"
+
     # Footer at bottom of sidebar
     st.markdown('<div class="sidebar-footer">FortiAIGate attack tester v1.0</div>', unsafe_allow_html=True)
 
@@ -1385,3 +1394,9 @@ if page == "Intelligent Routing":
                         st.metric("Correct routing", str(correct), border=True)
                         st.metric("Wrong routing", str(wrong), border=True)
                         st.metric("Errors", str(errors), border=True)
+
+# ── Page: Rate Limit ──
+
+if page == "Rate Limit":
+    st.header(":material/speed: Rate Limit")
+    st.info("Content to be added.", icon=":material/construction:")
