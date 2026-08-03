@@ -20,5 +20,5 @@ output "ssh_nlb_dns" {
 
 output "ssh_command" {
   description = "SSH command to connect to the EC2 instance via NLB"
-  value       = "ssh -i ~/.ssh/aws-demo-us-west-2.pem -p 2222 ec2-user@${aws_lb.ssh.dns_name}"
+  value       = "ssh -i aws-demo-us-west-2.pem -p 2222 ec2-user@${aws_lb.ssh.dns_name}"
 }

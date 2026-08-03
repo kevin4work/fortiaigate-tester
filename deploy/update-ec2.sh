@@ -21,7 +21,7 @@ if [ -z "$NLB_DNS" ]; then
   exit 1
 fi
 
-KEY_FILE="${AWS_SSH_KEY:-$HOME/.ssh/aws-demo-us-west-2.pem}"
+KEY_FILE="${AWS_SSH_KEY:-$DEPLOY_DIR/../aws-demo-us-west-2.pem}"
 SSH_PORT=2222
 
 echo "NLB DNS: $NLB_DNS"
