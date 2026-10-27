@@ -11,6 +11,9 @@ Classification rule:
 
 import csv
 import time
+from typing import Optional
+from urllib.parse import urlsplit
+
 import requests
 
 GATE_SIGNATURE = "fortiaigate"
@@ -52,24 +55,43 @@ def classify_response(response_text: str) -> str:
     return "Through"
 
 
+USAGE_TOKEN_KEYS = ("prompt_tokens", "completion_tokens", "total_tokens")
+
+
+def _extract_usage(data) -> Optional[dict]:
+    """Return validated OpenAI-style usage tokens from a parsed body, or None."""
+    if not isinstance(data, dict):
+        return None
+    usage = data.get("usage")
+    if not isinstance(usage, dict):
+        return None
+    tokens = {k: v for k, v in usage.items()
+              if k in USAGE_TOKEN_KEYS and isinstance(v, int) and v >= 0}
+    return tokens or None
+
+
 def send_prompt(
     endpoint: str,
     api_key: str,
     prompt: str,
-    model: str = "qwen/3_6_flash",
+    model: Optional[str] = None,
     timeout: int = 30,
 ) -> dict:
     """Send a single prompt to the FortiAIGate endpoint.
 
-    Returns a dict with keys: status, response_text, latency_ms, error
+    Returns a dict with keys: status, response_text, latency_ms, error,
+    status_code, raw_body, usage. The last three are None when no HTTP
+    response or usage was available; raw_body never echoes the api_key.
     """
-    # Derive model from endpoint path if possible
-    # e.g. /qwen/3_6_flash/chat/completions -> qwen/3_6_flash
-    parts = endpoint.rstrip("/").split("/")
-    if len(parts) >= 3 and parts[-1] == "completions" and parts[-2] == "chat":
-        inferred_model = "/".join(parts[-3:-1])
-    else:
+    # Explicit Configuration settings always take precedence. Retain the old
+    # /provider/model/chat/completions format only for callers without a model.
+    parts = urlsplit(endpoint).path.strip("/").split("/")
+    if model is not None:
         inferred_model = model
+    elif len(parts) == 4 and parts[-2:] == ["chat", "completions"]:
+        inferred_model = "/".join(parts[:2])
+    else:
+        inferred_model = "qwen/3_6_flash"
 
     headers = {
         "Content-Type": "application/json",
@@ -82,9 +104,18 @@ def send_prompt(
     }
 
     start = time.time()
+    status_code = None
+    raw_body = None
+    usage = None
     try:
-        resp = requests.post(endpoint, headers=headers, json=payload, timeout=timeout)
+        resp = requests.post(endpoint, headers=headers, json=payload, timeout=timeout, allow_redirects=False)
         latency_ms = int((time.time() - start) * 1000)
+        status_code = resp.status_code
+        try:
+            body = resp.text
+        except Exception:
+            body = ""
+        raw_body = body.replace(api_key, "[REDACTED]") if api_key else body
 
         if resp.status_code == 401:
             return {
@@ -92,6 +123,9 @@ def send_prompt(
                 "response_text": "",
                 "latency_ms": latency_ms,
                 "error": "Unauthorized — check API key",
+                "status_code": status_code,
+                "raw_body": raw_body,
+                "usage": usage,
             }
         if resp.status_code == 429:
             return {
@@ -99,29 +133,53 @@ def send_prompt(
                 "response_text": "",
                 "latency_ms": latency_ms,
                 "error": "Rate limited",
+                "status_code": status_code,
+                "raw_body": raw_body,
+                "usage": usage,
             }
-        if resp.status_code >= 400:
+        if resp.status_code >= 300:
             return {
                 "status": "Error",
-                "response_text": resp.text[:500],
+                "response_text": "",
                 "latency_ms": latency_ms,
                 "error": f"HTTP {resp.status_code}",
+                "status_code": status_code,
+                "raw_body": raw_body,
+                "usage": usage,
             }
 
         data = resp.json()
-        # OpenAI-compatible response format
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-        if not content:
-            # Some gateways return the response in a different field
-            content = data.get("response", data.get("output", ""))
-        if not content and isinstance(data, str):
-            content = data
+        usage = _extract_usage(data)
+        content = data if isinstance(data, str) else ""
+        if isinstance(data, dict):
+            choices = data.get("choices")
+            if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+                message = choices[0].get("message")
+                if isinstance(message, dict):
+                    content = message.get("content", "")
+            if not content:
+                content = data.get("response", data.get("output", ""))
+        if not isinstance(content, str) or not content.strip():
+            return {
+                "status": "Error",
+                "response_text": "",
+                "latency_ms": latency_ms,
+                "error": "Missing or invalid text response",
+                "status_code": status_code,
+                "raw_body": raw_body,
+                "usage": usage,
+            }
+        if api_key:
+            content = content.replace(api_key, "[REDACTED]")
 
         return {
             "status": "OK",
             "response_text": content,
             "latency_ms": latency_ms,
             "error": "",
+            "status_code": status_code,
+            "raw_body": raw_body,
+            "usage": usage,
         }
     except requests.Timeout:
         latency_ms = int((time.time() - start) * 1000)
@@ -130,22 +188,31 @@ def send_prompt(
             "response_text": "",
             "latency_ms": latency_ms,
             "error": "Timeout",
+            "status_code": status_code,
+            "raw_body": raw_body,
+            "usage": usage,
         }
-    except requests.ConnectionError as e:
+    except requests.ConnectionError:
         latency_ms = int((time.time() - start) * 1000)
         return {
             "status": "Error",
             "response_text": "",
             "latency_ms": latency_ms,
-            "error": f"Connection error: {e}",
+            "error": "Connection error",
+            "status_code": status_code,
+            "raw_body": raw_body,
+            "usage": usage,
         }
-    except Exception as e:
+    except Exception:
         latency_ms = int((time.time() - start) * 1000)
         return {
             "status": "Error",
             "response_text": "",
             "latency_ms": latency_ms,
-            "error": str(e),
+            "error": "Invalid response or request failure",
+            "status_code": status_code,
+            "raw_body": raw_body,
+            "usage": usage,
         }
 
 

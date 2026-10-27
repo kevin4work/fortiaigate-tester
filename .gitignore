@@ -6,6 +6,11 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv-app/
+.venv-runner/
+.runner-data/
+.test-artifacts/
+.claude/worktrees/
 venv/
 env/
 
@@ -35,11 +40,15 @@ coverage.xml
 *.py,cover
 .hypothesis/
 pytest_cache/
+.pytest_cache/
 
 # Environments
 .env
 .env.*
 !.env.example
+
+# SSH keys
+*.pem
 
 # IDE
 .idea/

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
+<title>FortiAIGate · Pagination design review</title>
+<style>
+:root { color-scheme:dark; --bg:#0d1117; --panel:#161b22; --inset:#10151c; --border:#30363d; --ink:#f0f3f6; --secondary:#a8b3c2; --muted:#8b98a9; --accent:#EE3124; --accent-soft:#2c1c20; --accent-border:#67302b; --focus:#3987e5; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+button,select { font:inherit; color:inherit; }
+button { cursor:pointer; background:none; border:0; }
+button:disabled { cursor:default; }
+button:focus-visible,select:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+[hidden] { display:none !important; }
+.wrap { max-width:1100px; margin:0 auto; padding:34px 22px 60px; }
+.eyebrow { color:var(--muted); text-transform:uppercase; font-size:10px; letter-spacing:1.6px; font-weight:650; margin-bottom:6px; }
+h1 { font-size:28px; letter-spacing:-.7px; margin:0 0 8px; font-weight:650; }
+.lede { color:var(--secondary); font-size:13px; margin:0 0 26px; max-width:760px; }
+.badge { display:inline-flex; align-items:center; gap:6px; border:1px solid #695026; background:#2b2317; border-radius:5px; padding:4px 9px; font-size:10px; letter-spacing:1px; font-weight:650; }
+.controls { display:flex; flex-wrap:wrap; gap:26px; border:1px solid var(--border); background:var(--panel); border-radius:8px; padding:16px 18px; margin-bottom:22px; }
+.control label.title { display:block; font-size:11px; color:var(--secondary); font-weight:550; margin-bottom:8px; }
+.seg { display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+.seg button { padding:7px 13px; font-size:12px; color:var(--secondary); background:var(--inset); border-right:1px solid var(--border); }
+.seg button:last-child { border-right:0; }
+.seg button[aria-pressed="true"] { color:var(--ink); background:var(--accent-soft); box-shadow:inset 0 -2px 0 var(--accent); }
+.cardlist { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+.case { border:1px solid var(--border); border-radius:8px; background:var(--panel); padding:13px 16px; }
+.case .t { font-size:12px; font-weight:550; }
+.case .s { color:var(--muted); font-size:11px; margin-top:4px; }
+/* ── Pagination footer ── */
+.pager { display:flex; align-items:center; justify-content:flex-end; gap:18px; flex-wrap:wrap; border-top:1px solid var(--border); padding:12px 4px 2px; }
+.pager .range { color:var(--secondary); font-size:12px; margin-right:auto; }
+.pager .perpage { display:flex; align-items:center; gap:8px; color:var(--secondary); font-size:12px; }
+.pager select { background:var(--inset); border:1px solid var(--border); border-radius:5px; padding:4px 8px; font-size:12px; }
+.nav { display:flex; align-items:center; gap:4px; }
+.nav button.page, .nav button.arrow { min-width:32px; height:32px; padding:0 6px; border-radius:6px; border:1px solid transparent; color:var(--secondary); font-size:12px; display:inline-flex; align-items:center; justify-content:center; }
+.nav button.page:hover, .nav button.arrow:hover:not(:disabled) { background:#1b222c; color:var(--ink); }
+.nav button.page[aria-current="page"] { color:var(--ink); background:var(--accent-soft); border-color:var(--accent-border); font-weight:600; }
+.nav button.arrow:disabled { opacity:.4; }
+.nav .gap { min-width:20px; text-align:center; color:var(--muted); font-size:12px; }
+.variant-note { border:1px solid var(--border); border-left:3px solid var(--accent); background:var(--panel); border-radius:8px; padding:14px 16px; margin-top:26px; color:var(--secondary); font-size:12px; }
+.variant-note strong { color:var(--ink); }
+.variant-note ul { margin:8px 0 0; padding-left:18px; }
+.variant-note li { margin-bottom:5px; }
+.foot { color:var(--muted); font-size:10px; margin-top:26px; display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+@media (max-width:640px) { .pager { justify-content:flex-start; } .pager .range { margin-right:0; width:100%; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Design review · not app code</div>
+  <h1>Pagination for test-case lists</h1>
+  <p class="lede">Two candidate footers for the Sensitive Data and Garak Testing case lists, in the app's dark theme. Placeholder cases only — no real prompts. Switch dataset size and page size to see boundaries, ellipsis and disabled states.</p>
+  <span class="badge">OFFLINE MOCKUP</span>
+  <div class="controls" style="margin-top:18px">
+    <div class="control"><label class="title" id="lbl-count">Dataset size</label><div class="seg" role="group" aria-labelledby="lbl-count"><button data-count="3" aria-pressed="false">3 cases</button><button data-count="38" aria-pressed="true">38 cases</button><button data-count="159" aria-pressed="false">159 cases</button></div></div>
+    <div class="control"><label class="title" id="lbl-variant">Footer style</label><div class="seg" role="group" aria-labelledby="lbl-variant"><button data-variant="a" aria-pressed="true">A · Numbered (recommended)</button><button data-variant="b" aria-pressed="false">B · Arrows only</button></div></div>
+  </div>
+  <div class="cardlist" id="cards"></div>
+  <nav class="pager" aria-label="Test case pagination">
+    <span class="range" id="range"></span>
+    <span class="perpage"><label for="perpage">Cases per page</label><select id="perpage"><option>10</option><option selected>20</option><option>50</option></select></span>
+    <span class="nav" id="nav"></span>
+  </nav>
+  <div class="variant-note" id="note"></div>
+  <div class="foot"><span>Patterns referenced: Material/MUI table footer, GOV.UK &amp; USWDS numbered pagination, Atlassian item caps.</span><span>FortiAIGate testing lab</span></div>
+</div>
+<script>
+'use strict';
+var state = { count:38, size:20, page:1, variant:'a' };
+function pages(){ return Math.max(1, Math.ceil(state.count/state.size)); }
+function clamp(){ state.page = Math.min(Math.max(1, state.page), pages()); }
+function windowed(){
+  var n = pages(), c = state.page, out = [], i;
+  var keep = {};
+  keep[1] = keep[n] = true;
+  for (i = c-1; i <= c+1; i++) if (i >= 1 && i <= n) keep[i] = true;
+  var last = 0;
+  for (i = 1; i <= n; i++) {
+    if (!keep[i]) continue;
+    if (last && i - last > 1) out.push('gap');
+    out.push(i); last = i;
+  }
+  return out;
+}
+function renderCards(){
+  var start = (state.page-1)*state.size, end = Math.min(state.count, start+state.size), html = '', i;
+  for (i = start+1; i <= end; i++) {
+    html += '<div class="case"><div class="t">Test case '+i+'</div><div class="s">Placeholder prompt and response area for layout review only.</div></div>';
+  }
+  document.getElementById('cards').innerHTML = html;
+  document.getElementById('range').textContent = state.count ? (start+1)+'–'+end+' of '+state.count+' cases' : '0 cases';
+}
+function renderNav(){
+  var nav = document.getElementById('nav'), n = pages(), html = '';
+  html += '<button class="arrow" id="prev" aria-label="Previous page"'+(state.page<=1?' disabled':'')+'>‹</button>';
+  if (state.variant === 'a') {
+    windowed().forEach(function(item){
+      if (item === 'gap') { html += '<span class="gap" aria-hidden="true">…</span>'; }
+      else html += '<button class="page" data-page="'+item+'"'+(item===state.page?' aria-current="page"':'')+' aria-label="Page '+item+'">'+item+'</button>';
+    });
+  } else {
+    html += '<span class="gap">Page '+state.page+' of '+n+'</span>';
+  }
+  html += '<button class="arrow" id="next" aria-label="Next page"'+(state.page>=n?' disabled':'')+'>›</button>';
+  nav.innerHTML = html;
+  var prev = document.getElementById('prev'), next = document.getElementById('next');
+  if (prev) prev.onclick = function(){ state.page--; clamp(); render(); };
+  if (next) next.onclick = function(){ state.page++; clamp(); render(); };
+  nav.querySelectorAll('button.page').forEach(function(b){ b.onclick = function(){ state.page = +b.dataset.page; render(); }; });
+}
+function renderNote(){
+  var note = document.getElementById('note');
+  if (state.variant === 'a') {
+    note.innerHTML = '<strong>Variant A — numbered with ellipsis (recommended).</strong> Standard for data lists: position awareness, direct jumps, and a stable sense of total size.'+
+      '<ul><li>First and last page always visible; current page ±1; gaps become a non-interactive ellipsis.</li>'+
+      '<li>“1–20 of 38” range plus cases-per-page selector match Material/MUI table footers.</li>'+
+      '<li>Arrows disabled (not hidden) at the boundaries.</li></ul>';
+  } else {
+    note.innerHTML = '<strong>Variant B — arrows only.</strong> The calmest footer, but users lose position and cannot jump; design guidance treats this as the minimum, not the target.'+
+      '<ul><li>Keep only if the list is almost always one or two pages.</li>'+
+      '<li>Current page number is shown as text because there are no numbered buttons.</li></ul>';
+  }
+}
+function render(){ clamp(); renderCards(); renderNav(); renderNote(); }
+document.querySelectorAll('[data-count]').forEach(function(b){ b.onclick = function(){ state.count = +b.dataset.count; state.page = 1; document.querySelectorAll('[data-count]').forEach(function(x){ x.setAttribute('aria-pressed', String(x===b)); }); render(); }; });
+document.querySelectorAll('[data-variant]').forEach(function(b){ b.onclick = function(){ state.variant = b.dataset.variant; document.querySelectorAll('[data-variant]').forEach(function(x){ x.setAttribute('aria-pressed', String(x===b)); }); render(); }; });
+document.getElementById('perpage').onchange = function(e){ state.size = +e.target.value; state.page = 1; render(); };
+render();
+</script>
+</body>
+</html>

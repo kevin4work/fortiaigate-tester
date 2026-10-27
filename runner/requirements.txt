@@ -1,0 +1,5 @@
+garak==0.17.0
+fastapi==0.118.0
+uvicorn==0.37.0
+httpx==0.28.1
+pytest==8.4.2

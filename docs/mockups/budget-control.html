@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
+<title>FortiAIGate · Budget Control mockup</title>
+<style>
+:root { color-scheme:dark; --bg:#0d1117; --panel:#161b22; --inset:#10151c; --border:#30363d; --ink:#f0f3f6; --secondary:#a8b3c2; --muted:#8b98a9; --accent:#EE3124; --green:#1a7f37; --amber:#bf8700; --focus:#3987e5; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; display:flex; min-height:100vh; }
+button, input, select { font:inherit; color:inherit; }
+button { cursor:pointer; background:none; border:0; }
+button:focus-visible, input:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+[hidden] { display:none !important; }
+aside { width:230px; flex:0 0 230px; background:#10151b; border-right:1px solid var(--border); padding:22px 14px; }
+.brand { font-size:20px; font-weight:750; letter-spacing:-.6px; margin:0 6px 4px; }
+.brand span { color:var(--accent); margin-right:8px; }
+.brand-cap { font-size:10px; letter-spacing:1.5px; color:var(--muted); margin:0 6px 22px; }
+.nav-group { font-size:10px; letter-spacing:1.5px; color:var(--muted); font-weight:600; margin:18px 6px 6px; }
+.nav button { display:flex; width:100%; text-align:left; padding:9px 12px; border-radius:6px; color:var(--secondary); font-size:13px; margin-bottom:2px; border:1px solid transparent; }
+.nav button.active { color:var(--ink); background:#2c1c20; border-color:#67302b; box-shadow:inset 3px 0 var(--accent); }
+main { flex:1; padding:34px 40px 70px; max-width:1240px; }
+.crumbs { color:var(--secondary); font-size:12px; border-bottom:1px solid var(--border); padding-bottom:14px; margin-bottom:22px; }
+.crumbs b { color:var(--ink); font-weight:500; }
+h1 { font-size:28px; letter-spacing:-.7px; margin:0 0 6px; }
+.lede { color:var(--secondary); font-size:13px; margin:0 0 22px; }
+.badge { display:inline-flex; border:1px solid #695026; background:#2b2317; border-radius:5px; padding:3px 9px; font-size:10px; letter-spacing:1px; font-weight:650; }
+.card { border:1px solid var(--border); background:var(--panel); border-radius:8px; padding:16px 18px; margin-bottom:16px; }
+.card h2 { font-size:15px; margin:0 0 12px; }
+.group-cap { font-size:10px; letter-spacing:1.5px; font-weight:600; margin:14px 0 8px; }
+.group-cap:first-of-type { margin-top:0; }
+.grid { display:flex; flex-wrap:wrap; gap:18px 34px; }
+.field label { display:block; font-size:11px; color:var(--secondary); margin-bottom:5px; }
+.field .val { background:var(--inset); border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; min-width:150px; color:var(--ink); }
+.controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.primary { background:#ce291e; border:1px solid #ce291e; color:#fff; border-radius:6px; padding:9px 18px; font-weight:600; }
+.primary:disabled { opacity:.5; cursor:default; }
+.ghost { border:1px solid var(--border); background:var(--inset); color:var(--secondary); border-radius:6px; padding:9px 14px; }
+.ghost:disabled { opacity:.45; cursor:default; }
+.scenario { margin-left:auto; display:flex; gap:8px; align-items:center; color:var(--secondary); font-size:12px; }
+.progress { height:6px; background:var(--inset); border:1px solid var(--border); border-radius:4px; overflow:hidden; margin:10px 0 4px; }
+.progress > div { height:100%; background:var(--accent); width:0%; transition:width .3s; }
+.ptext { color:var(--secondary); font-size:12px; }
+.budget { border:1px solid var(--border); background:var(--inset); border-radius:8px; padding:12px 14px; margin-top:14px; }
+.budget .brow { display:flex; justify-content:space-between; align-items:baseline; font-size:12px; color:var(--secondary); margin-bottom:6px; }
+.budget .brow b { color:var(--ink); font-size:13px; }
+.budget .brow .limit { color:var(--muted); }
+.gauge { height:10px; background:#0a0e13; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
+.gauge > div { height:100%; width:0%; background:var(--green); transition:width .3s, background .3s; }
+.gauge > div.near { background:var(--amber); }
+.gauge > div.hit { background:var(--accent); }
+.tiles { display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; }
+.tile { flex:1 1 150px; border:1px solid var(--border); background:var(--inset); border-radius:8px; padding:12px 14px; }
+.tile .l { font-size:11px; color:var(--secondary); }
+.tile .v { font-size:24px; font-weight:650; margin-top:4px; }
+.verdict { border-radius:8px; padding:12px 16px; font-size:13px; margin-top:14px; border:1px solid; }
+.verdict.ok { border-color:#274b31; background:#12261a; color:#7ee2a0; }
+.verdict.warn { border-color:#5c4a1e; background:#2b2317; color:#e3c56d; }
+.verdict.err { border-color:#67302b; background:#2c1c20; color:#f0a9a2; }
+table { width:100%; border-collapse:collapse; font-size:12.5px; }
+th { text-align:left; color:var(--muted); font-weight:500; border-bottom:1px solid var(--border); padding:7px 8px; }
+td { border-bottom:1px solid var(--border); padding:7px 8px; color:var(--secondary); }
+td.num, th.num { text-align:right; }
+.pill { border-radius:10px; padding:2px 9px; font-size:11px; font-weight:600; white-space:nowrap; }
+.pill.ok { background:#12261a; color:#7ee2a0; border:1px solid #274b31; }
+.pill.stop { background:#2c1c20; color:#f0a9a2; border:1px solid #67302b; }
+pre { background:var(--inset); border:1px solid var(--border); border-radius:6px; padding:10px 12px; font-size:12px; overflow:auto; color:var(--secondary); margin:8px 0 0; }
+.explain { border:1px solid #67302b; background:#2c1c20; border-radius:8px; padding:12px 16px; font-size:12.5px; color:var(--secondary); margin-top:10px; }
+.explain b { color:#f0a9a2; }
+.explain code { background:var(--inset); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:11.5px; color:var(--ink); }
+.note { color:var(--muted); font-size:12px; }
+.note b { color:var(--secondary); font-weight:600; }
+@media (max-width:860px) { aside { display:none; } main { padding:24px 16px 60px; } .scenario { margin-left:0; } }
+</style>
+</head>
+<body>
+<aside>
+  <p class="brand"><span>▦</span>FortiAIGate</p>
+  <p class="brand-cap">SECURITY TESTING LAB</p>
+  <div class="nav-group">WORKSPACE</div>
+  <div class="nav">
+    <button>Overview</button><button>Configuration</button><button class="active">Budget Control</button>
+  </div>
+  <div class="nav-group">TEST SUITES</div>
+  <div class="nav">
+    <button>Prompt Injection</button><button>Shadow AI</button><button>Sensitive Data</button><button>Garak Testing</button>
+  </div>
+  <div class="nav-group">PLANNED</div>
+  <div class="nav"><button>Intelligent Routing</button><button>Rate Limit</button></div>
+</aside>
+<main>
+  <div class="crumbs">Security lab / Workspace / <b>Budget Control</b></div>
+  <span class="badge">OFFLINE MOCKUP · SYNTHETIC NUMBERS</span>
+  <h1 style="margin-top:12px">Budget Control</h1>
+  <p class="lede">Verify that FortiAIGate enforces the spend limit on the budget key: send parallel requests until the gateway refuses, and keep the refusal as evidence.</p>
+
+  <div class="card">
+    <h2>Test settings</h2>
+    <div class="group-cap">CONNECTION · READ-ONLY FROM CONFIGURATION</div>
+    <div class="grid">
+      <div class="field"><label>Endpoint</label><div class="val">…/ai/openai/v1/chat/completions</div></div>
+      <div class="field"><label>Budget key (masked)</label><div class="val">faig_8042…••••</div></div>
+    </div>
+    <div class="group-cap">MODEL &amp; RATES · CONFIGURED / EXTRACTED BY FORTIAIGATE</div>
+    <div class="grid">
+      <div class="field"><label>Model</label><div class="val">qwen3.8-flash</div></div>
+      <div class="field"><label>Rate $/1M in</label><div class="val">5</div></div>
+      <div class="field"><label>Rate $/1M out</label><div class="val">50</div></div>
+      <div class="field"><label>Hourly budget</label><div class="val">$1.00 / hour</div></div>
+    </div>
+    <p class="note" style="margin:12px 0 0">Settings cannot be edited here. Rates are <b>configured or extracted by FortiAIGate</b>; the gateway's own accounting is authoritative. The budget key is managed on the Configuration page and never shown in full. The security suites never use this key.</p>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <button class="primary" id="run">Run budget test</button>
+      <button class="ghost" id="stop" disabled>Stop</button>
+      <div class="scenario"><label for="sc">Scenario</label>
+        <select id="sc"><option value="fresh">Fresh hour (accumulates to 402)</option><option value="exhausted">Already exhausted (immediate 402)</option></select>
+      </div>
+    </div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="ptext" id="ptext">Idle · no requests sent</div>
+    <div class="budget">
+      <div class="brow"><b>Hourly budget</b><span id="blabel">$0.84 of $1.00 used</span><span class="limit">limit $1.00 / hour</span></div>
+      <div class="gauge"><div id="gauge"></div></div>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="l">Requests completed</div><div class="v" id="t-req">0</div></div>
+    <div class="tile"><div class="l">Tokens in / out</div><div class="v" id="t-tok">0 / 0</div></div>
+    <div class="tile"><div class="l">Added spend</div><div class="v" id="t-spend">$0.00</div></div>
+    <div class="tile"><div class="l">Hourly total</div><div class="v" id="t-hour">$0.84</div></div>
+  </div>
+  <div class="verdict warn" id="verdict">Not started. The test sends parallel paid requests against the budget key until the gateway refuses with 402.</div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>Request log</h2>
+    <table>
+      <thead><tr><th>#</th><th>Result</th><th class="num">Latency</th><th class="num">In</th><th class="num">Out</th><th class="num">Cost</th><th class="num">Hourly total</th><th>Note</th></tr></thead>
+      <tbody id="log"><tr><td colspan="8" class="note">No requests yet.</td></tbody>
+    </table>
+  </div>
+
+  <div class="card" id="evidence-card" hidden>
+    <h2 id="evidence-title">Budget-hit response</h2>
+    <pre id="evidence"></pre>
+    <div class="explain">
+      <b>402 — Payment Required.</b> FortiAIGate tracks per-key spend against the configured hourly budget ($1.00/hour). When the hourly total reaches the limit, the gateway refuses further requests <b>at admission</b> — ≈0.2&nbsp;s latency, zero tokens billed — with <code>error.code = "budget_exceeded"</code> and <code>type = "payment_required_error"</code>. Enforcement lags one request boundary: the request that crosses the limit still succeeds; the next one is refused. A 402 carrying a different code, or any other status, is reported as-is and never relabelled as budget enforcement.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Verified enforcement contract (15 Oct 2026, live observation)</h2>
+    <p class="note" style="margin:0">
+      <b>402</b> with OpenAI-style body <b>error.code = "budget_exceeded"</b>, type "payment_required_error", message "budget exhausted for this API key".<br>
+      Refused at admission: ≈0.2 s, zero tokens billed. Enforcement lags one request boundary — the request that crosses the limit still succeeds; the next is refused.
+    </p>
+  </div>
+</main>
+<script>
+'use strict';
+var RATE_IN = 5/1e6, RATE_OUT = 50/1e6, HOURLY_START = 0.84, LIMIT = 1.0;
+var TIN = 1750, TOUT = 1024, COST = TIN*RATE_IN + TOUT*RATE_OUT;
+var WAVE = 4, SAFETY_CAP = 12;
+var running = false, stopReq = false;
+function money(v){ return '$' + v.toFixed(2); }
+function row(i, status, lat, tin, tout, cost, hourly, note, cls){
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td>'+i+'</td><td><span class="pill '+cls+'">'+status+'</span></td><td class="num">'+lat+' s</td><td class="num">'+tin+'</td><td class="num">'+tout+'</td><td class="num">'+money(cost)+'</td><td class="num">'+money(hourly)+'</td><td>'+note+'</td>';
+  return tr;
+}
+function setVerdict(cls, text){ var v = document.getElementById('verdict'); v.className = 'verdict ' + cls; v.textContent = text; }
+function setBudget(hourly){
+  var pct = Math.min(100, hourly / LIMIT * 100);
+  var g = document.getElementById('gauge');
+  g.style.width = pct + '%';
+  g.className = hourly >= LIMIT ? 'hit' : (pct >= 85 ? 'near' : '');
+  document.getElementById('blabel').textContent = money(hourly) + ' of ' + money(LIMIT) + ' used';
+}
+function showEvidence(i, hourly){
+  document.getElementById('evidence-card').hidden = false;
+  document.getElementById('evidence-title').textContent = 'Budget-hit response (request #' + i + ')';
+  document.getElementById('evidence').textContent =
+    'HTTP/1.1 402 Payment Required\nContent-Type: application/json\n\n' +
+    '{"error":{"message":"budget exhausted for this API key","type":"payment_required_error","param":null,"code":"budget_exceeded"}}';
+}
+async function run(){
+  running = true; stopReq = false;
+  document.getElementById('run').disabled = true;
+  document.getElementById('stop').disabled = false;
+  document.getElementById('evidence-card').hidden = true;
+  var log = document.getElementById('log'); log.innerHTML = '';
+  var scenario = document.getElementById('sc').value;
+  var hourly = scenario === 'exhausted' ? 1.02 : HOURLY_START;
+  var added = 0, tin = 0, tout = 0, completed = 0, sent = 0, planned = 0, wave = 0;
+  var budgetHit = false, hitIdx = null;
+  setBudget(hourly);
+  document.getElementById('t-hour').textContent = money(hourly);
+  setVerdict('warn', 'Running · sending parallel requests against the ' + money(LIMIT) + '/hour budget…');
+  while (!budgetHit && sent < SAFETY_CAP && !stopReq){
+    wave++;
+    var n = Math.min(WAVE, SAFETY_CAP - sent);
+    planned += n;
+    // dispatch one wave in parallel; completions land staggered
+    for (var j = 0; j < n; j++){
+      if (stopReq || budgetHit) break;
+      sent++;
+      var idx = sent;
+      await new Promise(function(r){ setTimeout(r, 380); });
+      if (stopReq) break;
+      completed++;
+      if (hourly >= LIMIT){
+        budgetHit = true; hitIdx = idx;
+        log.appendChild(row(idx, '402 budget_exceeded', '0.2', 0, 0, 0, hourly, 'Refused at admission; zero tokens billed', 'stop'));
+        showEvidence(idx, hourly);
+      } else {
+        tin += TIN; tout += TOUT; added += COST; hourly += COST;
+        log.appendChild(row(idx, '200 OK', '2' + (idx % 5) + '.' + (idx + 1), TIN, TOUT, COST, hourly, hourly > LIMIT ? 'Completed; crossed the limit — next request will be refused' : 'Completed; spend recorded by gateway', 'ok'));
+      }
+      setBudget(hourly);
+      document.getElementById('bar').style.width = Math.min(100, completed / planned * 100) + '%';
+      document.getElementById('ptext').textContent = 'Wave ' + wave + ' · ' + completed + '/' + planned + ' completed · added spend ' + money(added);
+      document.getElementById('t-req').textContent = completed;
+      document.getElementById('t-tok').textContent = tin + ' / ' + tout;
+      document.getElementById('t-spend').textContent = money(added);
+      document.getElementById('t-hour').textContent = money(hourly);
+    }
+  }
+  if (stopReq) setVerdict('warn', 'Stopped by operator after ' + completed + ' requests. No conclusion about enforcement.');
+  else if (budgetHit) setVerdict('ok', 'Budget limit enforced. The gateway refused request ' + hitIdx + ' with 402 budget_exceeded at ' + money(hourly) + ' hourly spend (' + money(LIMIT) + '/hour budget). Actual response and code explanation below.');
+  else setVerdict('warn', 'Reached the safety cap at ' + money(hourly) + ' hourly spend without a refusal. Inconclusive: check the gateway budget window.');
+  running = false;
+  document.getElementById('run').disabled = false;
+  document.getElementById('stop').disabled = true;
+  document.getElementById('ptext').textContent = budgetHit ? 'Finished · ' + completed + (completed === 1 ? ' request' : ' requests') + ' · budget hit on #' + hitIdx : document.getElementById('ptext').textContent;
+}
+document.getElementById('run').onclick = run;
+document.getElementById('stop').onclick = function(){ stopReq = true; };
+</script>
+</body>
+</html>

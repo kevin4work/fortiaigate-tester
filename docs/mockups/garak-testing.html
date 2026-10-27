@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
+<title>FortiAIGate · Garak Testing — design preview</title>
+<style>
+:root { color-scheme:dark; --bg:#0d1117; --panel:#161b22; --inset:#10151c; --border:#30363d; --ink:#f0f3f6; --secondary:#a8b3c2; --muted:#8b98a9; --brand:#EE3124; --brand-button:#ce291e; --blue:#3987e5; --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+button:disabled { cursor:not-allowed; opacity:.55; }
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible { outline:2px solid var(--blue); outline-offset:4px; }
+button,a { -webkit-tap-highlight-color:transparent; }
+[hidden] { display:none !important; }
+.shell { display:grid; grid-template-columns:218px minmax(0,1fr); min-height:100vh; }
+.sidebar { background:#10151b; border-right:1px solid var(--border); padding:28px 16px; display:flex; flex-direction:column; gap:24px; }
+.logo { padding:0 10px; font-size:22px; font-weight:750; letter-spacing:-.8px; }
+.logo-mark { display:inline-grid; grid-template-columns:repeat(3,5px); grid-template-rows:repeat(2,5px); gap:2px; margin-right:9px; vertical-align:middle; }
+.logo-mark i { background:var(--brand); }
+.sidebar-caption { padding-left:11px; color:var(--muted); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; margin-top:4px; }
+.nav-label { color:var(--muted); font-size:10px; font-weight:650; letter-spacing:1.5px; padding:0 12px 8px; }
+.nav-item { width:100%; display:flex; align-items:center; gap:11px; padding:10px 12px; margin:3px 0; border-radius:6px; color:var(--secondary); font-size:12px; border:1px solid transparent; text-align:left; background:transparent; }
+.nav-item .symbol { font-size:17px; width:19px; text-align:center; }
+.nav-item.active { color:var(--ink); background:#2c1c20; border-color:#67302b; box-shadow:inset 3px 0 var(--brand); }
+.nav-item .new { margin-left:auto; font-size:9px; font-weight:650; letter-spacing:1px; }
+.sidebar-bottom { margin-top:auto; border-top:1px solid var(--border); padding:19px 10px 0; font-size:11px; color:var(--muted); }
+.sidebar-bottom strong { color:var(--secondary); display:block; font-weight:550; }
+.main { min-width:0; }
+.topbar { padding:15px 34px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:15px; color:var(--secondary); font-size:12px; }
+.breadcrumb { display:flex; gap:12px; align-items:center; }
+.breadcrumb b { color:var(--ink); font-weight:500; }
+.preview-badge { border:1px solid #695026; border-radius:5px; background:#2b2317; padding:4px 9px; color:var(--ink); font-size:10px; letter-spacing:1px; font-weight:650; white-space:nowrap; }
+.content { max-width:1420px; margin:auto; padding:30px 34px 28px; }
+.title-row { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:23px; }
+.eyebrow { color:var(--muted); text-transform:uppercase; font-size:10px; letter-spacing:1.6px; font-weight:650; margin-bottom:6px; }
+h1 { font-size:29px; line-height:1.2; letter-spacing:-.7px; margin:0 0 8px; font-weight:650; }
+h2 { font-size:16px; margin:0; font-weight:600; letter-spacing:-.15px; }
+h3 { font-size:13px; margin:0; font-weight:600; }
+p { margin:0; }
+.sub { color:var(--secondary); font-size:12px; }
+.muted { color:var(--muted); }
+.tag { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:5px; background:var(--inset); padding:4px 8px; font-size:11px; white-space:nowrap; }
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--muted); display:inline-block; }
+.status-dot.good { background:var(--good); }
+.status-dot.warning { background:var(--warning); }
+.status-dot.serious { background:var(--serious); }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--border); border-radius:6px; background:var(--panel); padding:9px 14px; font-size:12px; color:var(--ink); font-weight:550; }
+.btn:hover { background:#212834; }
+.btn.primary { background:var(--brand-button); border-color:var(--brand-button); color:white; }
+.btn.primary:hover { background:#b92219; }
+.btn.small { padding:6px 10px; font-size:11px; }
+.btn.ghost { border-color:transparent; background:transparent; color:var(--secondary); }
+.tabs { display:flex; gap:25px; border-bottom:1px solid var(--border); margin-bottom:24px; }
+.tab { color:var(--secondary); background:none; border:0; border-bottom:2px solid transparent; padding:0 1px 12px; font-size:12px; }
+.tab[aria-selected="true"] { color:var(--ink); border-bottom-color:var(--brand); }
+.tab .step { display:inline-flex; align-items:center; justify-content:center; font-size:10px; border:1px solid var(--border); width:18px; height:18px; border-radius:50%; margin-right:6px; }
+.grid { display:grid; grid-template-columns:minmax(0,1fr) 285px; gap:20px; align-items:start; }
+.stack { display:flex; flex-direction:column; gap:18px; }
+.card { border:1px solid var(--border); border-radius:8px; background:var(--panel); min-width:0; }
+.card-head { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:18px 20px 0; }
+.card-body { padding:17px 20px 20px; }
+.card .description { color:var(--secondary); font-size:11px; margin-top:5px; }
+.card-head .section-no { color:var(--muted); margin-right:8px; font-size:12px; }
+label.field-label { display:block; font-size:11px; font-weight:550; color:var(--secondary); margin-bottom:6px; }
+input[type="text"],input[type="number"],select { width:100%; border:1px solid var(--border); border-radius:5px; background:var(--inset); color:var(--ink); padding:9px 11px; font-size:12px; min-width:0; }
+input[readonly] { color:var(--muted); }
+.mono { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11px; overflow-wrap:anywhere; }
+.helper { font-size:10px; color:var(--muted); margin-top:5px; }
+.inline-note { display:flex; gap:9px; align-items:start; border-top:1px solid var(--border); padding-top:12px; margin-top:16px; font-size:11px; color:var(--secondary); }
+.info-icon { font-size:14px; color:var(--ink); }
+.profiles { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+.profile { display:block; border:1px solid var(--border); border-radius:6px; padding:12px; cursor:pointer; background:var(--inset); }
+.profile:has(input:checked) { border-color:#c8453a; background:#261d21; }
+.profile-head { display:flex; gap:7px; align-items:center; margin-bottom:6px; font-size:12px; font-weight:550; }
+.profile input { margin:0; accent-color:var(--brand); }
+.profile p { font-size:10px; color:var(--secondary); line-height:1.6; }
+.profile .profile-cap { margin-top:9px; color:var(--ink); font-size:11px; }
+.coverage { display:flex; flex-wrap:wrap; gap:6px; margin-top:15px; }
+.coverage .tag { font-size:10px; }
+.exclusions { margin-top:12px; font-size:10px; color:var(--muted); }
+.limits { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.summary { padding:20px; }
+.summary dl { display:grid; grid-template-columns:1fr auto; gap:11px 10px; font-size:11px; margin:18px 0; }
+.summary dt { color:var(--secondary); }
+.summary dd { margin:0; text-align:right; }
+.rule { height:1px; background:var(--border); margin:17px 0; }
+.summary .btn { width:100%; margin-top:5px; }
+.notice { font-size:11px; padding:13px 14px; background:#211f19; border:1px solid #52482e; border-radius:6px; color:var(--secondary); }
+.notice strong { color:var(--ink); font-weight:550; }
+.definition-list { margin:13px 0 0; display:grid; gap:13px; font-size:11px; }
+.definition-list dt { color:var(--ink); font-weight:550; margin-bottom:2px; }
+.definition-list dd { margin:0; color:var(--secondary); }
+.footer-note { font-size:10px; color:var(--muted); margin-top:20px; display:flex; justify-content:space-between; gap:15px; }
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+.toolbar-left,.toolbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.live-heading { display:flex; align-items:center; gap:9px; }
+.stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:20px; }
+.stat { padding:17px 19px; }
+.stat-label { font-size:11px; color:var(--secondary); display:flex; align-items:center; gap:7px; }
+.stat-value { font-size:31px; font-weight:600; letter-spacing:-1px; margin:7px 0 2px; }
+.stat-desc { color:var(--muted); font-size:10px; }
+.run-layout { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(280px,1fr); gap:20px; }
+.progress-label { display:flex; justify-content:space-between; font-size:11px; color:var(--secondary); margin-bottom:9px; }
+.progress-track { height:7px; background:#173457; border-radius:4px; }
+.progress-fill { height:7px; width:60%; background:var(--blue); border-radius:0 4px 4px 0; }
+.run-row { display:grid; grid-template-columns:1fr auto; align-items:center; padding:13px 0; border-bottom:1px solid var(--border); }
+.run-row:last-child { border-bottom:0; }
+.run-name { font-size:12px; }
+.run-meta { font-size:10px; color:var(--muted); margin-top:3px; }
+.terminal { background:var(--inset); font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10px; line-height:2; padding:15px; border:1px solid var(--border); border-radius:5px; }
+.terminal p { overflow-wrap:anywhere; }
+.terminal time { color:var(--muted); margin-right:12px; }
+.run-details { display:grid; grid-template-columns:1fr 1fr; gap:13px; font-size:11px; }
+.run-details span { display:block; color:var(--muted); font-size:10px; margin-bottom:2px; }
+.result-intro { display:flex; justify-content:space-between; gap:20px; align-items:center; padding:21px 23px; margin-bottom:18px; background:linear-gradient(110deg,#1f2027,var(--panel)); }
+.result-intro .hero { font-size:48px; line-height:1; letter-spacing:-2px; font-weight:600; margin-right:15px; }
+.result-intro .headline { display:flex; align-items:center; }
+.result-intro h2 { font-size:17px; }
+.result-intro p { font-size:11px; color:var(--secondary); margin-top:5px; max-width:510px; }
+.result-layout { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(330px,1fr); gap:20px; margin-bottom:20px; }
+.chart { padding:15px 20px 20px; }
+.bar-row { display:grid; grid-template-columns:125px minmax(0,1fr) 22px; gap:12px; align-items:center; height:39px; position:relative; outline-offset:0; }
+.bar-label { font-size:11px; color:var(--secondary); }
+.bar-track { height:24px; display:flex; align-items:center; background:linear-gradient(to right,transparent calc(50% - 1px),#262e3a 50%,transparent calc(50% + 1px)),linear-gradient(to right,#30363d 1px,transparent 1px); }
+.bar { height:12px; background:var(--blue); border-radius:0 4px 4px 0; }
+.bar-value { font-size:11px; font-variant-numeric:tabular-nums; }
+.bar-row:hover .bar,.bar-row:focus-visible .bar { filter:brightness(1.2); }
+.axis { display:flex; justify-content:space-between; margin-left:137px; margin-right:34px; color:var(--muted); font-size:9px; padding-top:3px; }
+.chart-note { color:var(--muted); font-size:10px; margin-top:16px; }
+.texture .bar { background:repeating-linear-gradient(45deg,#3987e5 0,#3987e5 3px,#1c5cab 3px,#1c5cab 5px); }
+.outcome-row { display:flex; justify-content:space-between; gap:15px; padding:10px 0; border-bottom:1px solid var(--border); }
+.outcome-row:last-child { border-bottom:0; }
+.outcome-label { font-size:11px; display:flex; align-items:center; gap:8px; }
+.outcome-count { font-size:14px; font-variant-numeric:tabular-nums; }
+.table-wrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; font-size:11px; text-align:left; }
+th { color:var(--muted); font-weight:500; font-size:10px; background:var(--inset); }
+th,td { padding:11px 16px; border-bottom:1px solid var(--border); white-space:nowrap; }
+td.num,th.num { text-align:right; font-variant-numeric:tabular-nums; }
+tr:last-child td { border-bottom:0; }
+.result-table tr[data-evidence] { cursor:pointer; }
+.result-table tr[data-evidence]:hover { background:#1c2430; }
+.result-table .family-description { color:var(--muted); font-size:10px; margin-top:3px; }
+.status-icon { display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; font-size:10px; color:var(--ink); border:1px solid var(--serious); margin-right:5px; }
+.status-icon.ok { border-color:var(--good); }
+.table-footer { padding:12px 17px; font-size:10px; color:var(--muted); border-top:1px solid var(--border); }
+dialog { width:min(640px,calc(100% - 32px)); border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--ink); padding:0; box-shadow:0 20px 90px #0009; }
+dialog::backdrop { background:#03070cca; }
+.dialog-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border); }
+.dialog-body { padding:20px 24px; }
+.dialog-actions { padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:9px; }
+.evidence-block { border:1px solid var(--border); background:var(--inset); border-radius:5px; padding:13px; margin-top:12px; }
+.evidence-block .eyebrow { font-size:9px; margin-bottom:8px; }
+.evidence-block p { font-size:12px; }
+.evidence-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:15px 0; }
+.evidence-grid .tag { justify-content:center; white-space:normal; }
+.check { display:flex; align-items:flex-start; gap:8px; font-size:12px; margin-top:17px; color:var(--secondary); }
+.check input { accent-color:var(--brand); margin-top:4px; }
+.tooltip { position:fixed; max-width:290px; padding:9px 12px; border:1px solid var(--border); border-radius:5px; background:#252e3b; color:var(--ink); font-size:11px; pointer-events:none; z-index:20; box-shadow:0 5px 20px #0005; }
+#toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); max-width:calc(100% - 32px); border:1px solid var(--border); border-radius:6px; background:#263241; padding:12px 20px; font-size:12px; z-index:30; box-shadow:0 6px 30px #0008; }
+@media(max-width:1150px) { .shell { grid-template-columns:185px minmax(0,1fr); } .content { padding:24px; } .grid { grid-template-columns:minmax(0,1fr) 245px; gap:16px; } .limits { grid-template-columns:repeat(2,1fr); } .result-layout { grid-template-columns:1fr 1fr; } .bar-row { grid-template-columns:103px minmax(0,1fr) 20px; gap:8px; } .axis { margin-left:111px; margin-right:28px; } }
+@media(max-width:950px) { .grid,.run-layout,.result-layout { grid-template-columns:1fr; } .sidebar { padding:24px 10px; } .stat-grid { grid-template-columns:repeat(2,1fr); } .title-row { align-items:flex-start; } .title-row>.tag { display:none; } }
+@media(max-width:620px) { .shell { grid-template-columns:1fr; } .sidebar { display:none; } .content { padding:22px 16px; } .topbar { padding:13px 16px; flex-wrap:wrap; } .breadcrumb { font-size:10px; gap:7px; } .preview-badge { font-size:8px; } h1 { font-size:26px; } .tabs { gap:16px; } .tab { font-size:11px; } .profiles { grid-template-columns:1fr; } .result-intro { align-items:flex-start; } .result-intro>.tag { display:none; } .result-intro .hero { font-size:42px; } .footer-note { flex-direction:column; } }
+@media print { .sidebar,.topbar,.tabs,.btn,.footer-note { display:none; } .shell { display:block; } .content { padding:0; } .bar { background:repeating-linear-gradient(45deg,#3987e5 0,#3987e5 3px,#1c5cab 3px,#1c5cab 5px); print-color-adjust:exact; } .card { break-inside:avoid; } }
+@media(forced-colors:active) { .bar { background:CanvasText; forced-color-adjust:none; } .profile:has(input:checked),.tab[aria-selected="true"] { outline:2px solid Highlight; } }
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar" aria-label="Application context">
+  <div><div class="logo"><span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>FortiAIGate</div><div class="sidebar-caption">Security testing lab</div></div>
+  <div><div class="nav-label">WORKSPACE</div><div class="nav-item"><span class="symbol" aria-hidden="true">⌂</span> Overview</div><div class="nav-item"><span class="symbol" aria-hidden="true">⚙</span> Configuration</div><div class="nav-item"><span class="symbol" aria-hidden="true">▤</span> Model Pricing</div></div>
+  <div><div class="nav-label">TEST SUITES</div><div class="nav-item"><span class="symbol" aria-hidden="true">↳</span> Prompt Injection</div><div class="nav-item"><span class="symbol" aria-hidden="true">◈</span> Shadow AI</div><a class="nav-item" href="sensitive-data.html" style="text-decoration:none"><span class="symbol" aria-hidden="true">◇</span> Sensitive Data</a><div class="nav-item active" aria-current="page"><span class="symbol" aria-hidden="true">◎</span> Garak Testing <span class="new">NEW</span></div></div>
+  <div><div class="nav-label">PLANNED</div><a class="nav-item" href="sensitive-data.html#routing" style="text-decoration:none"><span class="symbol" aria-hidden="true">⇄</span> Intelligent Routing</a><a class="nav-item" href="sensitive-data.html#rate-limit" style="text-decoration:none"><span class="symbol" aria-hidden="true">◷</span> Rate Limit</a></div>
+  <div class="sidebar-bottom"><strong>FortiAIGate testing lab</strong>Combined design · awaiting approval<br><br>Sensitive Data and Planned items open their mockup screens. Other items are context only.</div>
+</aside>
+<main class="main">
+  <header class="topbar"><div class="breadcrumb">Security lab <span>/</span> Test suites <span>/</span> <b>Garak Testing</b></div><span class="preview-badge">DESIGN PREVIEW · SYNTHETIC DATA</span></header>
+  <div class="content">
+    <div class="title-row"><div><div class="eyebrow">Automated LLM vulnerability assessment</div><h1>Garak Testing</h1><p class="sub">Explore model weaknesses. Verify gateway defenses. Keep the evidence.</p></div><span class="tag"><span class="status-dot"></span> Offline mockup · no API calls</span></div>
+    <div class="tabs" role="tablist" aria-label="Mockup screens">
+      <button class="tab" id="tab-setup" role="tab" aria-selected="true" aria-controls="setup" data-view="setup"><span class="step">1</span> Scan setup</button>
+      <button class="tab" id="tab-run" role="tab" aria-selected="false" aria-controls="run" data-view="run"><span class="step">2</span> Run monitor</button>
+      <button class="tab" id="tab-results" role="tab" aria-selected="false" aria-controls="results" data-view="results"><span class="step">3</span> Findings & evidence</button>
+    </div>
+    <section id="setup" role="tabpanel" aria-labelledby="tab-setup">
+      <div class="grid">
+        <div class="stack">
+          <p class="sub">Connection settings are managed in Configuration.</p>
+          <div class="card"><div class="card-head"><h2><span class="section-no">01</span>Coverage profile</h2><span class="muted" style="font-size:10px">Proposed presets</span></div><div class="card-body">
+            <div class="profiles" role="radiogroup" aria-label="Coverage profile">
+              <label class="profile"><span class="profile-head"><input type="radio" name="profile" value="smoke">Smoke</span><p>Validate transport and a small selection of probes.</p><div class="profile-cap">60-request cap</div></label>
+              <label class="profile"><span class="profile-head"><input type="radio" name="profile" value="core" checked>Core assessment</span><p>Broader, remote-chat-compatible coverage.</p><div class="profile-cap">600-request cap</div></label>
+              <label class="profile"><span class="profile-head"><input type="radio" name="profile" value="extended">Extended</span><p>More variations and repeat generations.</p><div class="profile-cap">1,800-request cap</div></label>
+            </div>
+            <div class="coverage" id="coverage-tags"><span class="tag">Jailbreaks</span><span class="tag">Encoding attacks</span><span class="tag">Prompt leakage</span><span class="tag">Harmful content</span><span class="tag">Misinformation</span></div>
+            <p class="exclusions" id="coverage-note">Candidate coverage, not a compliance guarantee. Exact plugins are resolved against a pinned Garak release.</p>
+            <div class="inline-note"><span class="info-icon">⊘</span><span>Not in this profile: tool execution, MCP, RAG retrieval, multimodal input, resource-exhaustion or live exfiltration probes.</span></div>
+          </div></div>
+          <div class="card"><div class="card-head"><h2><span class="section-no">02</span>Run guardrails</h2><span class="tag">Enforced by worker</span></div><div class="card-body">
+            <div class="limits"><div><label class="field-label" for="budget">Request cap</label><input id="budget" type="number" value="600" min="1" max="5000"></div><div><label class="field-label" for="concurrency">Concurrency</label><input id="concurrency" type="number" value="1" min="1" max="4"></div><div><label class="field-label" for="rpm">Requests / minute</label><input id="rpm" type="number" value="30" min="1" max="120"></div><div><label class="field-label" for="minutes">Time cap (minutes)</label><input id="minutes" type="number" value="45" min="1" max="180"></div></div>
+            <p class="helper" style="margin-top:12px">Proposed defaults: 512 output tokens · 60s timeout · bounded retries counted toward cap · stop on repeated errors.</p>
+          </div></div>
+        </div>
+        <div class="stack">
+          <aside class="card summary"><h2>Scan summary</h2><dl><dt>Profile</dt><dd id="summary-profile">Core assessment</dd><dt>Request budget</dt><dd id="summary-budget">≤ 600</dd><dt>Rate limit</dt><dd id="summary-rpm">30 / min</dd><dt>Parallel requests</dt><dd id="summary-concurrency">1</dd><dt>Wall-time limit</dt><dd id="summary-minutes">45 min</dd></dl><div class="notice"><strong>Review before running.</strong><br>Adversarial prompts may trigger alerts and contain offensive content. Budgets are ceilings, not coverage estimates.</div><button class="btn primary" id="review-button" style="margin-top:17px">Review demo run <span aria-hidden="true">→</span></button><p class="helper" style="text-align:center;margin-top:9px">Preview only. No requests are sent.</p></aside>
+          <aside class="card"><div class="card-body"><h3>Two independent signals</h3><dl class="definition-list"><div><dt>Gateway enforcement</dt><dd>Did FortiAIGate explicitly block the request or response?</dd></div><div><dt>Garak evaluation</dt><dd>Did a detector flag the returned model output?</dd></div></dl><div class="rule"></div><p class="helper">A model refusal is not a gateway block. A response that passes the gateway is not automatically a vulnerability.</p></div></aside>
+        </div>
+      </div>
+    </section>
+    <section id="run" role="tabpanel" aria-labelledby="tab-run" hidden>
+      <div class="toolbar"><div class="toolbar-left"><h2 class="live-heading"><span class="status-dot good" id="run-dot"></span><span id="run-status">Running · example snapshot</span></h2><span class="tag mono">DEMO-2026-001</span></div><div class="toolbar-right"><button class="btn small" id="cancel-run">Cancel demo run</button><button class="btn primary small" data-goto="results">View sample results →</button></div></div>
+      <div class="stat-grid"><div class="card stat"><div class="stat-label">Requests dispatched</div><div class="stat-value">360<span style="font-size:15px;color:var(--muted);letter-spacing:0"> / 600 cap</span></div><div class="stat-desc">Budget consumed, not scan completion</div></div><div class="card stat"><div class="stat-label">Elapsed time</div><div class="stat-value">14m 22s</div><div class="stat-desc">45-minute wall-time cap</div></div><div class="card stat"><div class="stat-label">Confirmed gateway blocks</div><div class="stat-value">232</div><div class="stat-desc">Separate from detector results</div></div><div class="card stat"><div class="stat-label">Transport errors</div><div class="stat-value">8</div><div class="stat-desc">Excluded from evaluated output rates</div></div></div>
+      <div class="run-layout"><div class="stack"><div class="card"><div class="card-head"><h2>Coverage execution</h2><span class="tag">2 / 5 groups finished</span></div><div class="card-body"><div class="progress-label"><span>Request budget consumed</span><span>60%</span></div><div class="progress-track" role="meter" aria-label="Request budget consumed, not completion" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"><div class="progress-fill"></div></div><p class="helper" style="margin-bottom:12px">Adaptive probes and retries can change request counts. No fixed completion ETA.</p><div class="run-row"><div><div class="run-name">Jailbreaks</div><div class="run-meta">Selected probes finished</div></div><span class="tag">✓ Finished</span></div><div class="run-row"><div><div class="run-name">Encoding attacks</div><div class="run-meta">Selected probes finished</div></div><span class="tag">✓ Finished</span></div><div class="run-row"><div><div class="run-name">Prompt leakage</div><div class="run-meta" id="active-group-note">Generating and evaluating outputs</div></div><span class="tag" id="active-group-status">◷ In progress</span></div><div class="run-row"><div><div class="run-name">Harmful content</div><div class="run-meta">Not started</div></div><span class="tag">— Pending</span></div><div class="run-row"><div><div class="run-name">Misinformation</div><div class="run-meta">Not started</div></div><span class="tag">— Pending</span></div></div></div><div class="notice"><strong>Partial runs stay partial.</strong> Cancellation or budget exhaustion preserves evidence and marks unfinished coverage as incomplete, never passed.</div></div>
+      <div class="stack"><div class="card"><div class="card-head"><h2>Worker activity</h2><span class="tag">Sample events</span></div><div class="card-body"><div class="terminal"><p><time>14:22</time>output evaluated · record saved</p><p><time>14:20</time>gateway block · evidence saved</p><p><time>14:18</time>request dispatched · within budget</p><p><time>14:16</time>rate limiter · waiting 2.0s</p><p><time>14:14</time>output evaluated · record saved</p><p><time>13:58</time>probe group completed</p><p><time>13:55</time>report checkpoint written</p></div><p class="helper" style="margin-top:10px">Normalized worker events, not raw Garak console output. Credentials and full payloads are hidden.</p></div></div><div class="card"><div class="card-head"><h2>Immutable run snapshot</h2></div><div class="card-body"><div class="run-details"><div><span>Profile</span>Core assessment</div><div><span>Request cap</span>600 requests</div><div><span>Rate limit</span>30 / minute</div><div><span>Parallelism</span>1 request</div><div><span>Wall-time cap</span>45 minutes</div><div><span>Garak version</span>0.17.0 · proposed pin</div></div></div></div></div></div>
+    </section>
+    <section id="results" role="tabpanel" aria-labelledby="tab-results" hidden>
+      <div class="toolbar"><div class="toolbar-left"><span class="tag mono">DEMO-2026-001</span><span class="tag">✓ Finished · sample run</span><span class="sub">Core assessment</span></div><div class="toolbar-right"><button class="btn small" id="texture-toggle" aria-pressed="false">Texture: off</button><button class="btn small" id="export-sample">↓ Export sample JSON</button></div></div>
+      <div class="card result-intro"><div class="headline"><div class="hero">18</div><div><h2>Flagged responses to review</h2><p>18 of 198 evaluated outputs (9.1%). Detector flags are candidates for review, not confirmed exploits. This is not a model safety score.</p></div></div><span class="tag"><span class="status-dot serious"></span> Human review required</span></div>
+      <div class="stat-grid"><div class="card stat"><div class="stat-label">Requests dispatched</div><div class="stat-value">600</div><div class="stat-desc">390 blocked + 198 allowed + 12 errors</div></div><div class="card stat"><div class="stat-label">Confirmed gateway blocks</div><div class="stat-value">390</div><div class="stat-desc">66.3% of 588 classified responses</div></div><div class="card stat"><div class="stat-label">Evaluated model outputs</div><div class="stat-value">198</div><div class="stat-desc">Allowed outputs with detector coverage</div></div><div class="card stat"><div class="stat-label">Transport / service errors</div><div class="stat-value">12</div><div class="stat-desc">Unknown outcome · not passes or blocks</div></div></div>
+      <div class="result-layout"><div class="card"><div class="card-head"><div><h2>Flagged responses by probe family</h2><p class="description">Counts, not severity. Unequal sample sizes.</p></div><button class="btn small" id="chart-toggle" aria-pressed="false">Table view</button></div><div class="chart" id="bar-chart">
+        <div class="bar-row" tabindex="0" data-tooltip="Jailbreaks: 8 flagged / 60 evaluated outputs (13.3%)."><span class="bar-label">Jailbreaks</span><span class="bar-track"><span class="bar" style="width:100%"></span></span><span class="bar-value">8</span></div>
+        <div class="bar-row" tabindex="0" data-tooltip="Encoding attacks: 6 flagged / 45 evaluated outputs (13.3%)."><span class="bar-label">Encoding attacks</span><span class="bar-track"><span class="bar" style="width:75%"></span></span><span class="bar-value">6</span></div>
+        <div class="bar-row" tabindex="0" data-tooltip="Prompt leakage: 3 flagged / 40 evaluated outputs (7.5%)."><span class="bar-label">Prompt leakage</span><span class="bar-track"><span class="bar" style="width:37.5%"></span></span><span class="bar-value">3</span></div>
+        <div class="bar-row" tabindex="0" data-tooltip="Harmful content: 1 flagged / 30 evaluated outputs (3.3%)."><span class="bar-label">Harmful content</span><span class="bar-track"><span class="bar" style="width:12.5%"></span></span><span class="bar-value">1</span></div>
+        <div class="bar-row" tabindex="0" data-tooltip="Misinformation: 0 flagged / 23 evaluated outputs (0.0%). Not proof of safety."><span class="bar-label">Misinformation</span><span class="bar-track"><span class="bar" style="width:0%"></span></span><span class="bar-value">0</span></div>
+        <div class="axis"><span>0</span><span>4</span><span>8 responses</span></div><p class="chart-note">Hover or focus a row for its denominator. Table view contains the same values.</p>
+      </div><div class="table-wrap" id="chart-table" hidden><table><thead><tr><th>Probe family</th><th class="num">Flagged</th><th class="num">Evaluated</th><th class="num">Rate</th></tr></thead><tbody id="chart-table-body"></tbody></table></div></div>
+      <div class="card"><div class="card-head"><div><h2>Keep the signals separate</h2><p class="description">Output evaluation applies to the 198 allowed responses.</p></div></div><div class="card-body"><div class="outcome-row"><span class="outcome-label"><span class="status-icon">!</span>Garak flagged</span><span class="outcome-count">18</span></div><div class="outcome-row"><span class="outcome-label"><span class="status-icon ok">✓</span>Garak did not flag</span><span class="outcome-count">180</span></div><div class="outcome-row"><span class="outcome-label">Not evaluated · gateway blocked</span><span class="outcome-count">390</span></div><div class="outcome-row"><span class="outcome-label">Not evaluated · transport error</span><span class="outcome-count">12</span></div><div class="rule" style="margin:12px 0"></div><p class="helper">Model refusals are an additional annotation, not a gateway verdict. Raw Garak artifacts retain their original scoring; this view applies the gateway-aware denominator.</p></div></div></div>
+      <div class="card"><div class="card-head" style="padding-bottom:15px"><div><h2>Evidence explorer</h2><p class="description">Synthetic aggregate rows. Open a flagged family to preview a single evidence record.</p></div><span class="tag">5 probe families</span></div><div class="table-wrap"><table class="result-table"><thead><tr><th>Probe family</th><th class="num">Requests</th><th class="num">Blocked</th><th class="num">Evaluated</th><th class="num">Flagged</th><th class="num">Errors</th><th>Review</th></tr></thead><tbody id="evidence-table-body"></tbody></table></div><div class="table-footer">No direct-model baseline · no claim of protection uplift · no tool/MCP/RAG coverage · all figures are illustrative</div></div>
+    </section>
+    <div class="footer-note"><span>Design concept only. No credentials, network access, or real scan results.</span><span>FortiAIGate × NVIDIA garak · October 2026</span></div>
+  </div>
+</main>
+</div>
+<dialog id="review-dialog" aria-labelledby="review-title"><div class="dialog-header"><h2 id="review-title">Review assessment</h2><button class="btn ghost small" data-close="review-dialog" aria-label="Close review">✕</button></div><div class="dialog-body"><div class="notice"><strong>This is an offline simulation.</strong> Continue opens a fixed example run-monitor screen. Your settings do not launch or change that sample run.</div><div class="evidence-block"><div class="eyebrow">Selected scope & budgets</div><p id="review-scope"></p><p id="review-limits" class="sub" style="margin-top:8px"></p></div><label class="check"><input type="checkbox" id="review-confirm"><span>I understand that this is a design preview. A real run would require authorization and an explicit start confirmation.</span></label></div><div class="dialog-actions"><button class="btn" data-close="review-dialog">Back</button><button class="btn primary" id="continue-demo" disabled>Open sample monitor →</button></div></dialog>
+<dialog id="evidence-dialog" aria-labelledby="evidence-title"><div class="dialog-header"><div><div class="eyebrow">Synthetic evidence · DEMO-2026-001</div><h2 id="evidence-title">Evidence detail</h2></div><button class="btn ghost small" data-close="evidence-dialog" aria-label="Close evidence">✕</button></div><div class="dialog-body"><p class="sub" id="evidence-family"></p><div class="evidence-grid"><span class="tag">Gateway: allowed response</span><span class="tag">Detector: flagged · needs review</span></div><div class="evidence-block"><div class="eyebrow">Input · safely abbreviated</div><p id="evidence-prompt"></p></div><div class="evidence-block"><div class="eyebrow">Model output · illustrative placeholder</div><p>[Example response omitted. A production record would show the escaped, redacted model output and the detector's evidence.]</p></div><div class="evidence-block"><div class="eyebrow">Provenance required in production</div><p class="sub">Run ID → attempt UUID → request ID → output index → probe ID → detector ID / score / threshold → raw report reference.</p></div><div class="inline-note"><span class="info-icon">ⓘ</span><span>Gateway provenance must come from documented block codes or correlated gateway logs, not a keyword match. No real gateway evidence is present in this mockup.</span></div></div><div class="dialog-actions"><button class="btn" data-close="evidence-dialog">Close evidence</button><button class="btn primary" id="review-example">Mark reviewed · demo</button></div></dialog>
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div><div id="toast" role="status" hidden></div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const families = [
+  {name:'Jailbreaks', requests:184, blocked:120, evaluated:60, flagged:8, errors:4, prompt:'[Role-change and instruction-override test — synthetic placeholder.]'},
+  {name:'Encoding attacks', requests:147, blocked:100, evaluated:45, flagged:6, errors:2, prompt:'[Encoded instruction test — synthetic placeholder.]'},
+  {name:'Prompt leakage', requests:118, blocked:75, evaluated:40, flagged:3, errors:3, prompt:'[Attempt to elicit a non-sensitive test canary from the test system prompt.]'},
+  {name:'Harmful content', requests:87, blocked:55, evaluated:30, flagged:1, errors:2, prompt:'[Content-policy boundary test — synthetic placeholder.]'},
+  {name:'Misinformation', requests:64, blocked:40, evaluated:23, flagged:0, errors:1, prompt:'[A deliberately false premise used as a hallucination test.]'}
+];
+const profiles = {smoke:{name:'Smoke',cap:60,minutes:10},core:{name:'Core assessment',cap:600,minutes:45},extended:{name:'Extended',cap:1800,minutes:120}};
+function showView(id) {
+  if (!['setup','run','results'].includes(id)) id='setup';
+  document.querySelectorAll('[role="tabpanel"]').forEach(panel => panel.hidden=panel.id!==id);
+  document.querySelectorAll('[data-view]').forEach(tab => {tab.setAttribute('aria-selected',String(tab.dataset.view===id)); tab.tabIndex=tab.dataset.view===id?0:-1;});
+  history.replaceState(null,'','#'+id);
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-view]').forEach(tab => {
+  tab.addEventListener('click',() => showView(tab.dataset.view));
+  tab.addEventListener('keydown',event => {
+    const tabs=[...document.querySelectorAll('[data-view]')];
+    if (event.key==='ArrowRight'||event.key==='ArrowLeft') {event.preventDefault(); const next=tabs[(tabs.indexOf(tab)+(event.key==='ArrowRight'?1:tabs.length-1))%tabs.length]; showView(next.dataset.view); next.focus();}
+  });
+});
+document.querySelectorAll('[data-goto]').forEach(button => button.addEventListener('click',() => showView(button.dataset.goto)));
+function updateSummary() {
+  const profile=profiles[document.querySelector('input[name="profile"]:checked').value];
+  $('summary-profile').textContent=profile.name;
+  $('summary-budget').textContent='≤ '+Number($('budget').value).toLocaleString();
+  $('summary-rpm').textContent=$('rpm').value+' / min';
+  $('summary-concurrency').textContent=$('concurrency').value;
+  $('summary-minutes').textContent=$('minutes').value+' min';
+}
+document.querySelectorAll('input[name="profile"]').forEach(input => input.addEventListener('change',() => {
+  const profile=profiles[input.value]; $('budget').value=profile.cap; $('minutes').value=profile.minutes;
+  $('coverage-tags').hidden=input.value==='smoke';
+  $('coverage-note').textContent=input.value==='smoke'?'Small transport and probe sample only. A smoke run is not a comprehensive security assessment.':'Candidate coverage, not a compliance guarantee. Exact plugins are resolved against a pinned Garak release.';
+  updateSummary();
+}));
+['budget','concurrency','rpm','minutes'].forEach(id => $(id).addEventListener('input',updateSummary));
+let toastTimer;
+function toast(message) {$('toast').textContent=message; $('toast').hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(() => $('toast').hidden=true,4500);}
+function review() {
+  if (['budget','concurrency','rpm','minutes'].some(id => !$(id).checkValidity()||!$(id).value)) {toast('Choose valid positive run limits within the displayed ranges.');return;}
+  $('review-scope').textContent=$('summary-profile').textContent+' · '+($('coverage-tags').hidden?'Small transport and probe sample': [...$('coverage-tags').children].map(tag=>tag.textContent).join(', '));
+  $('review-limits').textContent=$('budget').value+' request cap · '+$('concurrency').value+' concurrent · '+$('rpm').value+' RPM · '+$('minutes').value+' minute cap';
+  $('review-confirm').checked=false; $('continue-demo').disabled=true; $('review-dialog').showModal();
+}
+$('review-button').addEventListener('click',review);
+$('review-confirm').addEventListener('change',() => $('continue-demo').disabled=!$('review-confirm').checked);
+$('continue-demo').addEventListener('click',() => {$('review-dialog').close();showView('run');toast('Fixed sample snapshot opened. No requests sent.');});
+document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click',() => $(button.dataset.close).close()));
+$('cancel-run').addEventListener('click',() => {$('run-status').textContent='Cancelled · partial example'; $('run-dot').className='status-dot warning'; $('active-group-note').textContent='Stopped; incomplete coverage retained'; $('active-group-status').textContent='⊘ Cancelled'; $('cancel-run').disabled=true; toast('Demo cancelled. Partial coverage must not be reported as passed.');});
+function addCell(row,text,className) {const cell=document.createElement('td'); cell.textContent=text;if(className)cell.className=className;row.append(cell);return cell;}
+families.forEach((family,index) => {
+  const chartRow=document.createElement('tr'); addCell(chartRow,family.name);addCell(chartRow,family.flagged,'num');addCell(chartRow,family.evaluated,'num');addCell(chartRow,(100*family.flagged/family.evaluated).toFixed(1)+'%','num');$('chart-table-body').append(chartRow);
+  const row=document.createElement('tr');addCell(row,family.name);['requests','blocked','evaluated','flagged','errors'].forEach(key=>addCell(row,family[key],'num'));
+  const reviewCell=document.createElement('td'); const button=document.createElement('button');button.className='btn small';button.textContent=family.flagged?'Review →':'No flags';button.disabled=!family.flagged;button.setAttribute('aria-label','Review '+family.name+' evidence');reviewCell.append(button);row.append(reviewCell);
+  if(family.flagged) {row.dataset.evidence=index;row.addEventListener('click',() => {$('evidence-title').textContent=family.name+' · example output';$('evidence-family').textContent='Illustrative record, not an actual Garak finding. Exact plugin IDs are release-dependent.';$('evidence-prompt').textContent=family.prompt;$('evidence-dialog').showModal();});}
+  $('evidence-table-body').append(row);
+});
+$('review-example').addEventListener('click',() => {$('evidence-dialog').close();toast('Review action demonstrated. No assessment record was saved.');});
+$('chart-toggle').addEventListener('click',() => {const table=$('chart-table').hidden;$('chart-table').hidden=!table;$('bar-chart').hidden=table;$('chart-toggle').textContent=table?'Chart view':'Table view';$('chart-toggle').setAttribute('aria-pressed',String(table));});
+$('texture-toggle').addEventListener('click',() => {const enabled=$('results').classList.toggle('texture');$('texture-toggle').textContent='Texture: '+(enabled?'on':'off');$('texture-toggle').setAttribute('aria-pressed',String(enabled));});
+document.querySelectorAll('[data-tooltip]').forEach(row => {
+  function position(x,y) {$('tooltip').style.left=Math.max(8,Math.min(x+12,window.innerWidth-300))+'px';$('tooltip').style.top=Math.max(8,Math.min(y+16,window.innerHeight-70))+'px';}
+  function show(event) {$('tooltip').textContent=row.dataset.tooltip; $('tooltip').hidden=false; const box=row.getBoundingClientRect();position(event.clientX||box.left+125,event.clientY||box.top+20);row.setAttribute('aria-describedby','tooltip');}
+  function hide() {$('tooltip').hidden=true;row.removeAttribute('aria-describedby');}
+  row.addEventListener('pointermove',show);row.addEventListener('pointerleave',hide);row.addEventListener('focus',show);row.addEventListener('blur',hide);row.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+});
+$('export-sample').addEventListener('click',() => {
+  const sample={synthetic:true,run_id:'DEMO-2026-001',configuration_source:'Configuration',garak_version:null,note:'Design fixture only; not a Garak report or executable scan configuration.',families:families.map(({prompt,...metrics})=>metrics)};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(sample,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='garak-synthetic-summary.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Synthetic summary exported. No secrets or real findings included.');
+});
+showView(location.hash.slice(1)||'setup');
+</script>
+</body>
+</html>
