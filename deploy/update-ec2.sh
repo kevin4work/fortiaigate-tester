@@ -40,7 +40,7 @@ fi
 
 printf 'NLB DNS: %s\nSSH port: %s\nSSH key: %s\n\n' "$NLB_DNS" "$SSH_PORT" "$KEY_FILE"
 echo "Deploying branch '$DEPLOY_BRANCH' to EC2..."
-ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" -p "$SSH_PORT" \
+ssh -i "$KEY_FILE" -p "$SSH_PORT" \
   "ec2-user@$NLB_DNS" "DEPLOY_BRANCH='$DEPLOY_BRANCH' bash" <<'REMOTE_SCRIPT'
 set -euo pipefail
 APP_DIR="/opt/fortiaigate-tester"
