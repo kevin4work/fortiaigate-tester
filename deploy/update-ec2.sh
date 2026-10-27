@@ -73,7 +73,11 @@ if [ ! -x .venv-runner/bin/python ]; then
 fi
 
 echo "=== Installing runner dependencies ==="
-.venv-runner/bin/pip install --quiet --no-cache-dir -r runner/requirements.lock
+PIP_TMP_DIR=$(mktemp -d /var/tmp/fortiaigate-pip.XXXXXX)
+trap 'rmdir "$PIP_TMP_DIR" 2>/dev/null || true' EXIT
+TMPDIR="$PIP_TMP_DIR" .venv-runner/bin/pip install --quiet --no-cache-dir -r runner/requirements.lock
+rmdir "$PIP_TMP_DIR"
+trap - EXIT
 .venv-runner/bin/python -c 'import fastapi, garak, httpx, uvicorn'
 .venv/bin/python -c 'import streamlit, requests'
 

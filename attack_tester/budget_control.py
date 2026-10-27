@@ -15,7 +15,7 @@ import streamlit as st
 
 # Mirrors of the FortiAIGate gateway configuration for the budget key:
 # per-1M-token rates ($ in, $ out) and the hourly spend limit in dollars.
-RATES_PER_1M = {"qwen3.8-flash": (5.0, 50.0)}
+RATES_PER_1M = {"qwen3.8-flash": (5.0, 50.0), "faig-deepseek-flash": (5.0, 50.0)}
 HOURLY_BUDGET = 1.00
 
 WAVE = 2            # parallel requests per batch

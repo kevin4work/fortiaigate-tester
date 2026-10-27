@@ -142,6 +142,19 @@ def test_page_gates_on_missing_budget_key():
     assert not [b for b in test.button if b.label == "Run budget test"]
 
 
+@pytest.mark.parametrize("model", ["qwen3.8-flash", "faig-deepseek-flash"])
+def test_page_uses_shared_budget_and_rates(model):
+    test = page(**{**CONFIGURED, "model": model})
+    test.run()
+    assert not test.exception
+    values = {widget.label: widget.value for widget in test.text_input}
+    assert values["Model"] == model
+    assert values["Rate $/1M in"] == "5"
+    assert values["Rate $/1M out"] == "50"
+    assert values["Hourly budget"] == "$1.00 / hour"
+    assert [b for b in test.button if b.label == "Run budget test"]
+
+
 def test_page_gates_on_unrated_model():
     test = page(**{**CONFIGURED, "model": "model-without-rate"})
     test.run()
