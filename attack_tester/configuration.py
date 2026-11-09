@@ -97,7 +97,7 @@ def render_configuration():
             st.session_state.config_rate_limit_api_key = st.session_state.saved_rate_limit_api_key
         st.text_input("API key (security test suites)", type="password", key="config_api_key", on_change=_sync_setting,
                       args=("config_api_key", "saved_api_key"),
-                      help="Used by Prompt Injection, Sensitive Data and Garak Testing. Stored only in this server session.")
+                      help="Used by Prompt Injection, Sensitive Data, Garak and Custom Testing. Stored only in this server session.")
         st.text_input("API key (Budget Control)", type="password", key="config_budget_api_key", on_change=_sync_setting,
                       args=("config_budget_api_key", "saved_budget_api_key"),
                       help="Separate key for Budget Control tests against the same endpoint. Stored only in this server session.")

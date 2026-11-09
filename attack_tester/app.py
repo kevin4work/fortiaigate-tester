@@ -389,3 +389,7 @@ if page == "Sensitive Data":
 if page == "Garak Testing":
     from attack_tester.garak_page import render_garak_page
     render_garak_page()
+
+if page == "Custom Testing":
+    from attack_tester.custom_testing import render_custom_testing
+    render_custom_testing()

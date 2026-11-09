@@ -9,6 +9,7 @@ A Streamlit security-testing workspace with manual Prompt Injection tests, fixed
 - **Garak Testing:** reviewed Smoke/Core/Extended profiles with inline test cards grouped by attack technique. Each prompt and response stays on the same page as progress, outcomes and response time. No synthetic results are substituted when the runner is unavailable.
 - **Both assessment pages:** Run all tests / Stop, sending progress, a compact technique summary, paginated case cards (10/20/50 per page, default 20, Previous/Next buttons), and optional history/technical details—no separate monitor/results navigation and no export button.
 - **Prompt Injection:** retained manual functionality.
+- **Custom Testing:** operator-uploaded CSV cases (`technique,description,prompt_text`; `techniques` or `attack_type` also work as the first column) plus an optional multi-stage CSV (`technique,stage_1…stage_4`, maximum 4 stages), each with a downloadable sample. Runs app-side, one case at a time — each stage is one request — under fixed caps (1,000 cases / 4,000 requests / 45 minutes); progress counts cases, a sequence stops at its first blocked or failed stage and records the stages never sent, and the evidence card gives every stage its own block with the prompt and the reply it got. The same page hosts a playground whose **New session** clears the conversation immediately. Evidence lives in the browser session only; the redacted JSON/CSV exports are the persistence story.
 - **Budget Control:** verifies the gateway enforces the per-key spend cap, keeping the 402 `budget_exceeded` refusals as evidence.
 - **Rate Limit:** verifies the gateway enforces 5 requests/minute and 100,000 tokens/minute on a dedicated rate-limit key, with two test cases on one page and the 429 refusals kept as evidence.
 - **Shadow AI:** “To be constructed” placeholder, reserved under PLANNED.
@@ -96,6 +97,7 @@ Smoke/Core/Extended sample bounded subsets rather than claiming exhaustive cover
 - The operator-specified block indicator is **“blocked by FortiAIGate”**, matched case-insensitively in the chatbot-facing reply. Matching completed HTTP 200/403 responses count as FortiAIGate blocks. The phrase appearing only in request text, metadata, or internal reasoning does not count. Other authentication/service failures keep their error status.
 - Gateway block replies are excluded from Garak model-output scoring. Without the block phrase, a response is not automatically a successful attack; HKID/card expectations and Garak findings remain separate observations.
 - Detector flags are review candidates, not confirmed exploits or verified live credentials. Unscored outputs/errors are not passes.
+- **Custom Testing** reuses the same block phrase and buckets, and reports **Block rate = Blocked ÷ (Blocked + Through)**; Errors stay outside that denominator because their gateway outcome is unknown. A multi-stage case counts once, at the outcome of the stage where it stopped, while every stage actually sent counts against the request cap.
 - The manual Prompt Injection page retains its historical signature classifier, explicitly labeled **heuristic**.
 - Cancelled, failed and budget-limited runs retain partial evidence. Completion is verified only after worker exit and native report/coverage checks.
 
@@ -122,7 +124,8 @@ On macOS Python 3.9.6, Requests' urllib3 may emit a LibreSSL compatibility warni
 
 - [attack_tester/](attack_tester/) — app, shared shell, Configuration, test pages, runner client.
 - [common/test_catalog.py](common/test_catalog.py) — authoritative unchanged HKID/card fixtures.
-- [common/fortiaigate_test.py](common/fortiaigate_test.py) — manual CSV transport and legacy heuristic.
+- [attack_tester/custom_testing.py](attack_tester/custom_testing.py) — uploaded CSV cases, multi-stage runs and the playground; executes in the app process and never dispatches through the runner.
+- [common/fortiaigate_test.py](common/fortiaigate_test.py) — manual CSV transport (`send_prompt`, and `send_messages` for caller-owned conversations) and legacy heuristic.
 - [runner/](runner/) — private API, storage, supervisor, native Garak worker and transport.
 - [tests/](tests/) — offline unit, UI and native integration checks.
 - [docs/mockups/](docs/mockups/) — design artifacts; not app data or live reports.

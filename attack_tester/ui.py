@@ -9,7 +9,8 @@ NAVIGATION = (
     ("WORKSPACE", (("Overview", "home"), ("Configuration", "settings"), ("Budget Control", "account_balance_wallet"),
                    ("Rate Limit", "speed"))),
     ("TEST SUITES", (("Prompt Injection", "shield"),
-                     ("Sensitive Data", "privacy_tip"), ("Garak Testing", "radar"))),
+                     ("Sensitive Data", "privacy_tip"), ("Garak Testing", "radar"),
+                     ("Custom Testing", "upload_file"))),
     ("PLANNED", (("Shadow AI", "person_search"),)),
 )
 

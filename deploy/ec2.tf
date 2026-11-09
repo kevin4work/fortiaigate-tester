@@ -31,7 +31,7 @@ resource "aws_instance" "main" {
   user_data_replace_on_change = true
 
   root_block_device {
-    volume_size = 10
+    volume_size = 100
     volume_type = "gp3"
   }
 

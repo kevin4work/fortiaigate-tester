@@ -83,6 +83,32 @@ def send_prompt(
     status_code, raw_body, usage. The last three are None when no HTTP
     response or usage was available; raw_body never echoes the api_key.
     """
+    return _post_chat(endpoint, api_key, [{"role": "user", "content": prompt}], model, timeout)
+
+
+def send_messages(
+    endpoint: str,
+    api_key: str,
+    messages: list,
+    model: Optional[str] = None,
+    timeout: int = 30,
+) -> dict:
+    """Send a caller-owned conversation (multi-stage cases, playground) to the endpoint.
+
+    Same return contract and redaction as send_prompt; the gateway is stateless,
+    so the caller replays the whole history on every turn.
+    """
+    return _post_chat(endpoint, api_key, list(messages), model, timeout)
+
+
+def _post_chat(
+    endpoint: str,
+    api_key: str,
+    messages: list,
+    model: Optional[str],
+    timeout: int,
+) -> dict:
+    """POST one chat-completions body and map the reply into the shared contract."""
     # Explicit Configuration settings always take precedence. Retain the old
     # /provider/model/chat/completions format only for callers without a model.
     parts = urlsplit(endpoint).path.strip("/").split("/")
@@ -100,7 +126,7 @@ def send_prompt(
 
     payload = {
         "model": inferred_model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": messages,
     }
 
     start = time.time()
